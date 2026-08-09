@@ -1,18 +1,20 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "Project X API"
+    app_name: str = "Silverbird BigMama Restaurant"
+    api_title: str = "Silverbird BigMama Restaurant API"
+    api_description: str = "Backend API for the Silverbird BigMama Restaurant food ordering system."
     app_version: str = "1.0.0"
     environment: str = "development"
     debug: bool = True
     api_v1_prefix: str = "/api/v1"
 
     database_url: str = Field(
-        default="postgresql+psycopg://postgres:postgres@localhost:5432/project_x"
+        default="postgresql+psycopg://postgres:postgres@localhost:5432/silverbird_bigmama_restaurant"
     )
 
     jwt_secret_key: str = "change-me"
@@ -20,6 +22,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
+    password_reset_token_expire_minutes: int = 30
 
     paystack_secret_key: str = "paystack-secret"
     paystack_public_key: str = "paystack-public"
@@ -30,7 +33,7 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = "supabase-service-role-key"
     supabase_bucket_name: str = "food-images"
 
-    restaurant_name: str = "Big Mama Restaurant"
+    restaurant_name: str = "Silverbird BigMama Restaurant"
     restaurant_latitude: float = 6.4350
     restaurant_longitude: float = 3.4219
     delivery_base_fee: float = 1000.0
@@ -43,7 +46,24 @@ class Settings(BaseSettings):
     smtp_password: str = "secret"
     sms_provider_api_key: str = "sms-key"
 
+    initial_admin_first_name: str | None = None
+    initial_admin_last_name: str | None = None
+    initial_admin_email: str | None = None
+    initial_admin_phone: str | None = None
+    initial_admin_password: str | None = None
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    @field_validator("debug", mode="before")
+    @classmethod
+    def parse_debug_value(cls, value):
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"release", "prod", "production", "false", "0", "no"}:
+                return False
+            if normalized in {"development", "dev", "true", "1", "yes"}:
+                return True
+        return value
 
 
 @lru_cache

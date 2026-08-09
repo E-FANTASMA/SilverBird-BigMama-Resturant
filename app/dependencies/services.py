@@ -1,6 +1,7 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from app.application.services.address_service import AddressService
 from app.application.services.auth_service import AuthService
 from app.application.services.cart_service import CartService
 from app.application.services.category_service import CategoryService
@@ -14,6 +15,7 @@ from app.application.services.report_service import ReportService
 from app.application.services.user_service import UserService
 from app.core.config import get_settings
 from app.infrastructure.database.session import get_db_session
+from app.infrastructure.supabase_storage import SupabaseStorageService
 
 
 def get_auth_service(session: Session = Depends(get_db_session)) -> AuthService:
@@ -29,15 +31,19 @@ def get_category_service(session: Session = Depends(get_db_session)) -> Category
 
 
 def get_food_service(session: Session = Depends(get_db_session)) -> FoodService:
-    return FoodService(session)
+    return FoodService(session, SupabaseStorageService(get_settings()))
 
 
 def get_cart_service(session: Session = Depends(get_db_session)) -> CartService:
-    return CartService(session)
+    return CartService(session, OrderPricingService(get_settings()))
+
+
+def get_address_service(session: Session = Depends(get_db_session)) -> AddressService:
+    return AddressService(session)
 
 
 def get_order_service(session: Session = Depends(get_db_session)) -> OrderService:
-    return OrderService(session, OrderPricingService(get_settings()))
+    return OrderService(session, OrderPricingService(get_settings()), AddressService(session), CartService(session, OrderPricingService(get_settings())))
 
 
 def get_payment_service(session: Session = Depends(get_db_session)) -> PaymentService:

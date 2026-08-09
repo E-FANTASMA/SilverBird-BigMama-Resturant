@@ -14,6 +14,7 @@ class OrderModel(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     order_number: Mapped[str] = mapped_column(String(30), nullable=False, unique=True, index=True)
     order_type: Mapped[OrderType] = mapped_column(Enum(OrderType, name="order_type_enum"), nullable=False)
+    delivery_address_id: Mapped[str | None] = mapped_column(ForeignKey("delivery_addresses.id"), index=True)
     status: Mapped[OrderStatus] = mapped_column(
         Enum(OrderStatus, name="order_status_enum"), default=OrderStatus.PENDING, nullable=False
     )
@@ -22,6 +23,7 @@ class OrderModel(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     delivery_distance_km: Mapped[Decimal | None] = mapped_column(Numeric(8, 2))
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     notes: Mapped[str | None] = mapped_column(Text)
+    table_number: Mapped[str | None] = mapped_column(String(30))
     scheduled_pickup_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     payment_status: Mapped[PaymentStatus] = mapped_column(
         Enum(PaymentStatus, name="payment_status_enum"), default=PaymentStatus.PENDING, nullable=False
@@ -29,6 +31,7 @@ class OrderModel(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     user = relationship("UserModel", back_populates="orders")
+    delivery_address = relationship("DeliveryAddressModel", lazy="selectin")
     items = relationship("OrderItemModel", back_populates="order", cascade="all, delete-orphan", lazy="selectin")
     payments = relationship("PaymentModel", back_populates="order", lazy="selectin")
     delivery = relationship("DeliveryModel", back_populates="order", uselist=False, lazy="selectin")

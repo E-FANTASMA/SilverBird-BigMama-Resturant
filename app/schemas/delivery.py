@@ -9,12 +9,21 @@ from app.schemas.common import TimestampResponse
 
 class DeliveryAssignRequest(BaseModel):
     delivery_personnel_id: UUID
-    delivery_address_id: UUID
+    delivery_address_id: UUID | None = None
     estimated_delivery_time: datetime | None = None
 
 
 class DeliveryStatusUpdateRequest(BaseModel):
     status: DeliveryStatus
+
+
+class DeliveryContactResponse(BaseModel):
+    order_id: UUID
+    customer_name: str
+    customer_phone: str | None = None
+    delivery_address: str | None = None
+    city: str | None = None
+    state: str | None = None
 
 
 class DeliveryResponse(TimestampResponse):

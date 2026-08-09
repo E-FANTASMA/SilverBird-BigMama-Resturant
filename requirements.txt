@@ -9,6 +9,7 @@ psycopg[binary]
 pytest
 python-dotenv
 python-jose[cryptography]
+python-multipart
 python-slugify
 sqlalchemy
 uvicorn[standard]

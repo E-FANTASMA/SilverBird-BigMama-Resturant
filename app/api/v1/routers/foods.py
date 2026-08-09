@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, Response, UploadFile
 
 from app.application.services.food_service import FoodService
 from app.dependencies.auth import require_roles
@@ -29,3 +29,24 @@ def create_food(payload: FoodCreateRequest, service: FoodService = Depends(get_f
 @router.patch("/{food_id}", response_model=FoodResponse, dependencies=[Depends(require_roles(RoleName.ADMIN))])
 def update_food(food_id: UUID, payload: FoodUpdateRequest, service: FoodService = Depends(get_food_service)):
     return service.update_food(food_id, payload)
+
+
+@router.delete("/{food_id}", status_code=204, dependencies=[Depends(require_roles(RoleName.ADMIN))])
+def delete_food(food_id: UUID, service: FoodService = Depends(get_food_service)):
+    service.delete_food(food_id)
+    return Response(status_code=204)
+
+
+@router.post("/{food_id}/image", response_model=FoodResponse, dependencies=[Depends(require_roles(RoleName.ADMIN))])
+async def upload_food_image(
+    food_id: UUID,
+    image: UploadFile = File(...),
+    service: FoodService = Depends(get_food_service),
+):
+    content = await image.read()
+    return service.upload_food_image(
+        food_id,
+        filename=image.filename or "upload.bin",
+        content_type=image.content_type,
+        content=content,
+    )

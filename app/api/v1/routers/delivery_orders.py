@@ -6,7 +6,7 @@ from app.application.services.delivery_service import DeliveryService
 from app.dependencies.auth import get_current_user, require_roles
 from app.dependencies.services import get_delivery_service
 from app.domain.enums import RoleName
-from app.schemas.delivery import DeliveryResponse, DeliveryStatusUpdateRequest
+from app.schemas.delivery import DeliveryContactResponse, DeliveryResponse, DeliveryStatusUpdateRequest
 
 router = APIRouter(dependencies=[Depends(require_roles(RoleName.DELIVERY_PERSONNEL))])
 
@@ -27,3 +27,12 @@ def update_delivery_status(
     service: DeliveryService = Depends(get_delivery_service),
 ):
     return service.update_delivery_status(current_user.id, delivery_id, payload)
+
+
+@router.get("/{delivery_id}/contact", response_model=DeliveryContactResponse)
+def get_customer_contact(
+    delivery_id: UUID,
+    current_user=Depends(get_current_user),
+    service: DeliveryService = Depends(get_delivery_service),
+):
+    return service.get_customer_contact(current_user.id, delivery_id)

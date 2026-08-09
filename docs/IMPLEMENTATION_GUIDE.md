@@ -1,4 +1,4 @@
-# Project X Implementation Guide
+# Silverbird BigMama Restaurant Implementation Guide
 
 This document explains what each file does and what the current code is responsible for.
 

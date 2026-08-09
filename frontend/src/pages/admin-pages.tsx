@@ -1,0 +1,362 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { BarChart3, Bike, DollarSign, Package, PlusCircle, Users } from "lucide-react";
+import type { ReactNode } from "react";
+import { useMemo } from "react";
+import { useForm } from "react-hook-form";
+import { Link } from "react-router-dom";
+import { z } from "zod";
+import { useAdminDashboard, useCategories, useFoods, useOrders, useProfile } from "@/api/hooks";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { demoDeliveryOrders } from "@/lib/mock";
+import {
+  AppDialog,
+  Badge,
+  Button,
+  Card,
+  DataTable,
+  EmptyState,
+  SectionHeading,
+  Select,
+  StatCard,
+  TextArea,
+  TextInput,
+} from "@/components/ui";
+
+const foodSchema = z.object({
+  name: z.string().min(1),
+  category_id: z.string().min(1),
+  price: z.string().min(1),
+  description: z.string().min(10),
+});
+
+export function AdminDashboardPage() {
+  const { data } = useAdminDashboard();
+
+  return (
+    <div className="space-y-6">
+      <SectionHeading title="Dashboard" description="An executive restaurant overview with premium density and legibility." />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Total orders" value={`${data?.total_orders ?? 0}`} delta="+12%" />
+        <StatCard label="Total customers" value={`${data?.total_customers ?? 0}`} delta="+8%" />
+        <StatCard label="Revenue" value={formatCurrency(data?.total_revenue ?? 0)} delta="+18%" />
+        <StatCard label="Pending orders" value={`${data?.pending_orders ?? 0}`} />
+      </div>
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <RevenueChartCard />
+        <Card className="p-6">
+          <SectionHeading title="Operational focus" description="Quick-glance priorities for the shift." />
+          <div className="mt-6 space-y-4">
+            {[
+              ["Prep line stability", "Kitchen throughput is holding below the 20-minute target."],
+              ["Rider assignments", "Three high-value delivery orders need rider allocation."],
+              ["Top-selling dishes", "Charcoal chicken and jollof continue to lead conversion."],
+            ].map(([title, copy]) => (
+              <div key={title} className="rounded-2xl border border-border p-4">
+                <p className="font-medium">{title}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{copy}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+export function ManageCategoriesPage() {
+  const { data: categories } = useCategories();
+  return (
+    <div className="space-y-6">
+      <SectionHeading title="Manage Categories" description="Simple, elegant administration surfaces with clean table rhythm." />
+      <DataTable
+        columns={["Category", "Description", "Sort Order", "Status"]}
+        rows={(categories ?? []).map((category) => [
+          <span className="font-medium">{category.name}</span>,
+          category.description ?? "No description",
+          `${category.sort_order}`,
+          <Badge tone="success">Active</Badge>,
+        ])}
+      />
+    </div>
+  );
+}
+
+export function ManageFoodsPage() {
+  const { data: foods } = useFoods();
+  const { data: categories } = useCategories();
+
+  return (
+    <div className="space-y-6">
+      <SectionHeading
+        title="Manage Foods"
+        description="Food inventory controls with fast scanning and polished row actions."
+        action={<Link to="/admin/foods/new"><Button><PlusCircle className="h-4 w-4" /> Add food</Button></Link>}
+      />
+      <DataTable
+        columns={["Food", "Category", "Price", "Availability"]}
+        rows={(foods ?? []).map((food) => [
+          <span className="font-medium">{food.name}</span>,
+          categories?.find((category) => category.id === food.category_id)?.name ?? "Unassigned",
+          formatCurrency(food.price),
+          <Badge tone={food.is_available ? "success" : "danger"}>{food.is_available ? "Available" : "Hidden"}</Badge>,
+        ])}
+      />
+    </div>
+  );
+}
+
+export function AddEditFoodPage() {
+  const { data: categories } = useCategories();
+  const form = useForm<z.infer<typeof foodSchema>>({
+    resolver: zodResolver(foodSchema),
+    defaultValues: { name: "", category_id: "", price: "", description: "" },
+  });
+
+  return (
+    <Card className="mx-auto max-w-4xl p-6">
+      <SectionHeading title="Add / Edit Food" description="A production-style editor for core menu items." />
+      <form className="mt-6 grid gap-4 sm:grid-cols-2">
+        <Field label="Food name" error={form.formState.errors.name?.message}>
+          <TextInput {...form.register("name")} placeholder="Charcoal Chicken Supreme" />
+        </Field>
+        <Field label="Category" error={form.formState.errors.category_id?.message}>
+          <Select {...form.register("category_id")}>
+            <option value="">Select category</option>
+            {categories?.map((category) => (
+              <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Price" error={form.formState.errors.price?.message}>
+          <TextInput {...form.register("price")} placeholder="9800" />
+        </Field>
+        <div className="sm:col-span-2">
+          <Field label="Description" error={form.formState.errors.description?.message}>
+            <TextArea {...form.register("description")} placeholder="Describe the dish, texture, sides, and flavor..." />
+          </Field>
+        </div>
+        <div className="sm:col-span-2">
+          <Button>Save food</Button>
+        </div>
+      </form>
+    </Card>
+  );
+}
+
+export function AdminOrdersPage() {
+  const { data: orders } = useOrders();
+  return (
+    <div className="space-y-6">
+      <SectionHeading title="Orders" description="Customer orders styled as a clean operational queue." />
+      <DataTable
+        columns={["Order", "Date", "Status", "Payment", "Amount", "Action"]}
+        rows={(orders ?? []).map((order) => [
+          <span className="font-medium">{order.order_number}</span>,
+          formatDate(order.created_at),
+          <Badge>{order.status.replace(/_/g, " ")}</Badge>,
+          <Badge tone={order.payment_status === "SUCCESSFUL" ? "success" : "warning"}>{order.payment_status}</Badge>,
+          formatCurrency(order.total),
+          <Link to={`/admin/orders/${order.id}`}><Button variant="outline" size="sm">Open</Button></Link>,
+        ])}
+      />
+    </div>
+  );
+}
+
+export function AdminOrderDetailsPage() {
+  const { data: orders } = useOrders();
+  const order = orders?.[0];
+
+  if (!order) {
+    return <EmptyState title="No order selected" description="Order details will appear here once available." />;
+  }
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
+      <Card className="p-6">
+        <SectionHeading title={`Order ${order.order_number}`} description="Order lines, notes, and fulfillment details for the operations team." />
+        <div className="mt-6 space-y-4">
+          {order.items.map((item) => (
+            <div key={item.id} className="flex items-center justify-between rounded-2xl border border-border p-4">
+              <div>
+                <p className="font-medium">{item.food_name_snapshot}</p>
+                <p className="text-sm text-muted-foreground">Qty {item.quantity}</p>
+              </div>
+              <Badge>{formatCurrency(item.subtotal)}</Badge>
+            </div>
+          ))}
+        </div>
+      </Card>
+      <Card className="p-6">
+        <SectionHeading title="Delivery assignment" description="Assign a rider or review the current dispatch state." />
+        <div className="mt-6 space-y-4">
+          {demoDeliveryOrders.map((delivery) => (
+            <div key={delivery.id} className="rounded-2xl border border-border p-4">
+              <p className="font-medium">Delivery #{delivery.id}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{delivery.status.replace(/_/g, " ")}</p>
+            </div>
+          ))}
+          <AppDialog
+            title="Assign delivery"
+            description="This modal demonstrates the shared dialog system for operational actions."
+            trigger={<Button className="w-full">Assign rider</Button>}
+          >
+            <div className="space-y-4">
+              <Select>
+                <option>Choose delivery personnel</option>
+                <option>James Okoro</option>
+                <option>Peter Adewale</option>
+              </Select>
+              <Button className="w-full">Confirm assignment</Button>
+            </div>
+          </AppDialog>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+export function CustomersPage() {
+  const { data: profile } = useProfile();
+  const rows = useMemo(
+    () => [
+      [profile?.first_name ?? "Amara", profile?.email ?? "amara@example.com", profile?.phone ?? "+234...", "12", <Badge tone="success">Active</Badge>],
+      ["Kunle", "kunle@example.com", "+2348098765432", "8", <Badge tone="success">Active</Badge>],
+      ["Tosin", "tosin@example.com", "+2348011122233", "5", <Badge tone="warning">New</Badge>],
+    ],
+    [profile],
+  );
+
+  return (
+    <div className="space-y-6">
+      <SectionHeading title="Customers" description="A clean roster of restaurant customers with easy scanability." />
+      <DataTable columns={["Name", "Email", "Phone", "Orders", "Status"]} rows={rows} />
+    </div>
+  );
+}
+
+export function DeliveryPersonnelPage() {
+  return (
+    <div className="space-y-6">
+      <SectionHeading title="Delivery Personnel" description="Rider management with concise performance indicators." />
+      <DataTable
+        columns={["Name", "Phone", "Status", "Deliveries"]}
+        rows={[
+          ["James Okoro", "+2348034567890", <Badge tone="success">Active</Badge>, "120"],
+          ["Peter Adewale", "+2348012349988", <Badge tone="warning">On route</Badge>, "98"],
+          ["Samuel Brown", "+2348065432109", <Badge tone="success">Active</Badge>, "78"],
+        ]}
+      />
+    </div>
+  );
+}
+
+export function ReportsPage() {
+  return (
+    <div className="grid gap-6 xl:grid-cols-2">
+      <RevenueChartCard />
+      <Card className="p-6">
+        <SectionHeading title="Order analytics" description="A companion reporting surface for operations and revenue tracking." />
+        <div className="mt-6 grid gap-4">
+          {[
+            { icon: <DollarSign className="h-5 w-5" />, title: "Average order value", value: formatCurrency(3672) },
+            { icon: <Package className="h-5 w-5" />, title: "Orders this week", value: "284" },
+            { icon: <Users className="h-5 w-5" />, title: "Returning customers", value: "63%" },
+            { icon: <Bike className="h-5 w-5" />, title: "On-time delivery", value: "91%" },
+          ].map((item) => (
+            <div key={item.title} className="flex items-center gap-4 rounded-2xl border border-border p-4">
+              <div className="rounded-2xl bg-primary/10 p-3 text-primary">{item.icon}</div>
+              <div>
+                <p className="text-sm text-muted-foreground">{item.title}</p>
+                <p className="text-lg font-semibold">{item.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+export function RevenueAnalyticsPage() {
+  return <ReportsPage />;
+}
+
+export function AdminNotificationsPage() {
+  return (
+    <div className="space-y-6">
+      <SectionHeading title="Notifications" description="Operational messaging cards with clear severity and action visibility." />
+      <div className="grid gap-4">
+        {[
+          ["Kitchen queue spike", "12 more orders than projected in the last 30 minutes.", "warning"],
+          ["Payment reconciliation complete", "Daily payment sync closed successfully.", "success"],
+          ["Rider reassignment needed", "Order BM12456789 needs a new delivery person.", "danger"],
+        ].map(([title, copy, tone]) => (
+          <Card key={title} className="p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold">{title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{copy}</p>
+              </div>
+              <Badge tone={tone as "warning" | "success" | "danger"}>{tone}</Badge>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function AdminSettingsPage() {
+  return (
+    <div className="grid gap-4 xl:grid-cols-2">
+      {[
+        ["Kitchen SLA alerts", "Notify admins when prep times exceed threshold."],
+        ["Automatic rider suggestions", "Prepare dispatch recommendations when delivery demand rises."],
+        ["Revenue digest", "Email summary of daily order and revenue performance."],
+        ["Catalog publishing controls", "Require admin approval before food edits go live."],
+      ].map(([title, copy]) => (
+        <Card key={title} className="p-6">
+          <h3 className="font-semibold">{title}</h3>
+          <p className="mt-2 text-sm text-muted-foreground">{copy}</p>
+          <Button className="mt-5" variant="outline">Manage</Button>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function RevenueChartCard() {
+  const bars = [24, 48, 38, 62, 40, 72, 55, 68, 49, 58, 64, 80];
+  return (
+    <Card className="p-6">
+      <SectionHeading title="Revenue Overview" description="A bespoke analytics card without generic dashboard styling." />
+      <div className="mt-8 grid h-72 grid-cols-12 items-end gap-3">
+        {bars.map((bar, index) => (
+          <div key={index} className="flex h-full flex-col justify-end gap-3">
+            <div className="rounded-t-2xl bg-[linear-gradient(180deg,rgba(194,154,76,0.82),rgba(99,18,34,0.92))]" style={{ height: `${bar}%` }} />
+            <span className="text-center text-xs text-muted-foreground">{index + 1}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="block space-y-2">
+      <span className="text-sm font-medium">{label}</span>
+      {children}
+      {error ? <span className="text-xs text-danger">{error}</span> : null}
+    </label>
+  );
+}

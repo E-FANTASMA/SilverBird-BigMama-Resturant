@@ -20,3 +20,7 @@ class ConflictException(AppException):
 
 class ValidationException(AppException):
     """Raised when domain validation fails."""
+
+
+class ExternalServiceException(AppException):
+    """Raised when an external dependency fails."""

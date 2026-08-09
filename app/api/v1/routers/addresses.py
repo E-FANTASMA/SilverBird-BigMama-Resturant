@@ -1,34 +1,27 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, status
 
-from app.core.exceptions import ForbiddenException
+from app.application.services.address_service import AddressService
 from app.dependencies.auth import get_current_user
-from app.infrastructure.database.models.address import DeliveryAddressModel
-from app.infrastructure.database.repositories.address_repository import AddressRepository
-from app.infrastructure.database.session import get_db_session
+from app.dependencies.services import get_address_service
 from app.schemas.address import AddressCreateRequest, AddressResponse, AddressUpdateRequest
 
 router = APIRouter()
 
 
 @router.get("", response_model=list[AddressResponse])
-def list_addresses(current_user=Depends(get_current_user), session: Session = Depends(get_db_session)):
-    return AddressRepository(session).list_by_user_id(current_user.id)
+def list_addresses(current_user=Depends(get_current_user), service: AddressService = Depends(get_address_service)):
+    return service.list_addresses(current_user.id)
 
 
 @router.post("", response_model=AddressResponse)
 def create_address(
     payload: AddressCreateRequest,
     current_user=Depends(get_current_user),
-    session: Session = Depends(get_db_session),
+    service: AddressService = Depends(get_address_service),
 ):
-    address = DeliveryAddressModel(user_id=current_user.id, **payload.model_dump())
-    session.add(address)
-    session.commit()
-    session.refresh(address)
-    return address
+    return service.create_address(current_user.id, payload)
 
 
 @router.patch("/{address_id}", response_model=AddressResponse)
@@ -36,13 +29,24 @@ def update_address(
     address_id: UUID,
     payload: AddressUpdateRequest,
     current_user=Depends(get_current_user),
-    session: Session = Depends(get_db_session),
+    service: AddressService = Depends(get_address_service),
 ):
-    address = AddressRepository(session).get(address_id)
-    if str(address.user_id) != str(current_user.id):
-        raise ForbiddenException("You do not have access to this address")
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(address, field, value)
-    session.commit()
-    session.refresh(address)
-    return address
+    return service.update_address(current_user.id, address_id, payload)
+
+
+@router.delete("/{address_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_address(
+    address_id: UUID,
+    current_user=Depends(get_current_user),
+    service: AddressService = Depends(get_address_service),
+):
+    service.delete_address(current_user.id, address_id)
+
+
+@router.post("/{address_id}/default", response_model=AddressResponse)
+def set_default_address(
+    address_id: UUID,
+    current_user=Depends(get_current_user),
+    service: AddressService = Depends(get_address_service),
+):
+    return service.set_default_address(current_user.id, address_id)

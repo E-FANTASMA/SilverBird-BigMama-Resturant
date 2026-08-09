@@ -4,7 +4,7 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import ForbiddenException, UnauthorizedException
+from app.core.exceptions import ForbiddenException, NotFoundException, UnauthorizedException
 from app.core.security import decode_access_token
 from app.domain.enums import RoleName
 from app.infrastructure.database.repositories.user_repository import UserRepository
@@ -26,12 +26,18 @@ def get_current_user(
     user_id = payload.get("sub")
     if not user_id:
         raise UnauthorizedException("Invalid token payload")
-    return UserRepository(session).get(UUID(user_id))
+    try:
+        user = UserRepository(session).get(UUID(user_id))
+    except NotFoundException as exc:
+        raise UnauthorizedException("User for this token was not found") from exc
+    if not user.is_active or user.deleted_at is not None:
+        raise UnauthorizedException("This account is inactive")
+    return user
 
 
 def require_roles(*roles: RoleName):
     def dependency(current_user=Depends(get_current_user)):
-        if current_user.role.name not in {role.value for role in roles}:
+        if not current_user.role or current_user.role.name not in {role.value for role in roles}:
             raise ForbiddenException("You do not have access to this resource")
         return current_user
 

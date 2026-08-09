@@ -21,3 +21,8 @@ def get_order(order_id: UUID, service: OrderService = Depends(get_order_service)
 @router.post("/{order_id}/assign-delivery", response_model=DeliveryResponse)
 def assign_delivery(order_id: UUID, payload: DeliveryAssignRequest, service: DeliveryService = Depends(get_delivery_service)):
     return service.assign_delivery(order_id, payload)
+
+
+@router.post("/{order_id}/reassign-delivery", response_model=DeliveryResponse)
+def reassign_delivery(order_id: UUID, payload: DeliveryAssignRequest, service: DeliveryService = Depends(get_delivery_service)):
+    return service.assign_delivery(order_id, payload)

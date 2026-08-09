@@ -13,6 +13,7 @@ class OrderCreateRequest(BaseModel):
     delivery_address_id: UUID | None = None
     notes: str | None = None
     scheduled_pickup_time: datetime | None = None
+    table_number: str | None = None
 
 
 class OrderItemResponse(ORMBaseSchema):
@@ -28,11 +29,14 @@ class OrderResponse(TimestampResponse):
     user_id: UUID
     order_number: str
     order_type: OrderType
+    delivery_address_id: UUID | None = None
     status: OrderStatus
     subtotal: Decimal
     delivery_fee: Decimal
     delivery_distance_km: Decimal | None = None
     total: Decimal
     notes: str | None = None
+    table_number: str | None = None
+    scheduled_pickup_time: datetime | None = None
     payment_status: PaymentStatus
     items: list[OrderItemResponse]

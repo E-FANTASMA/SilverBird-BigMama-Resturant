@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.application.services.auth_service import AuthService
+from app.application.services.category_service import CategoryService
+from app.application.services.food_service import FoodService
 from app.domain.enums import RoleName
 from app.infrastructure.database.base import Base
 from app.infrastructure.database.models import RoleModel  # noqa: F401
@@ -27,7 +30,10 @@ def main() -> None:
     create_tables()
     with SessionLocal() as session:
         seed_roles(session)
-    print("Database tables created and roles seeded.")
+        CategoryService(session).seed_default_categories()
+        FoodService(session).seed_default_menu()
+        AuthService(session).seed_initial_admin()
+    print("Database tables created, roles/categories/menu seeded, and optional initial admin provisioned.")
 
 
 if __name__ == "__main__":

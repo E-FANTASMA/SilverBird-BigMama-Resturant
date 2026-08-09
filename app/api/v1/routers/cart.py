@@ -37,3 +37,8 @@ def update_item(
 @router.delete("/items/{item_id}", response_model=CartResponse)
 def remove_item(item_id: UUID, current_user=Depends(get_current_user), service: CartService = Depends(get_cart_service)):
     return service.remove_item(current_user.id, item_id)
+
+
+@router.delete("", response_model=CartResponse)
+def clear_cart(current_user=Depends(get_current_user), service: CartService = Depends(get_cart_service)):
+    return service.clear_cart(current_user.id)

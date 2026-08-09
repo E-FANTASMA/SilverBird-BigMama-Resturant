@@ -13,7 +13,7 @@ class CategoryService:
         self.categories = CategoryRepository(session)
 
     def list_categories(self):
-        return self.categories.list()
+        return self.categories.list_active()
 
     def create_category(self, payload: CategoryCreateRequest):
         slug = slugify(payload.name)
@@ -35,3 +35,22 @@ class CategoryService:
         self.session.commit()
         self.session.refresh(category)
         return category
+
+    def seed_default_categories(self) -> None:
+        defaults = [
+            {"name": "Atrium Menu", "description": "Main restaurant menu", "sort_order": 1},
+            {"name": "Indian Food", "description": "Indian food menu", "sort_order": 2},
+        ]
+        for item in defaults:
+            slug = slugify(item["name"])
+            if self.categories.get_by_slug(slug):
+                continue
+            self.categories.add(
+                CategoryModel(
+                    name=item["name"],
+                    slug=slug,
+                    description=item["description"],
+                    sort_order=item["sort_order"],
+                )
+            )
+        self.session.commit()

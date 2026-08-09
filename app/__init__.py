@@ -1,1 +1,1 @@
-"""Project X application package."""
+"""Silverbird BigMama Restaurant application package."""

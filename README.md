@@ -1,6 +1,6 @@
-# Project X Backend
+# Silverbird BigMama Restaurant Backend
 
-Production-oriented FastAPI backend scaffold for Big Mama Restaurant's food ordering platform.
+Production-oriented FastAPI backend for the Silverbird BigMama Restaurant food ordering platform.
 
 ## Stack
 
@@ -11,6 +11,13 @@ Production-oriented FastAPI backend scaffold for Big Mama Restaurant's food orde
 - JWT authentication
 - Paystack integration points
 - Supabase Storage integration points
+
+## API Metadata
+
+- Application Name: `Silverbird BigMama Restaurant`
+- API Title: `Silverbird BigMama Restaurant API`
+- API Description: `Backend API for the Silverbird BigMama Restaurant food ordering system.`
+- Repository Name: `Silverbird-BigMama-Restaurant`
 
 ## Run
 
@@ -39,6 +46,11 @@ python -m app.scripts.init_db
 5. Start the API.
 ```powershell
 uvicorn app.main:app --reload
+```
+
+6. Swagger UI
+```
+http://127.0.0.1:8000/docs
 ```
 
 ## Notes

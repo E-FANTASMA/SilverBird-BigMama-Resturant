@@ -12,3 +12,7 @@ class UserRepository(SQLAlchemyRepository[UserModel]):
     def get_by_email(self, email: str) -> UserModel | None:
         statement = select(UserModel).where(func.lower(UserModel.email) == email.lower())
         return self.session.scalar(statement)
+
+    def get_by_phone(self, phone: str) -> UserModel | None:
+        statement = select(UserModel).where(UserModel.phone == phone)
+        return self.session.scalar(statement)

@@ -18,6 +18,7 @@ class CartItemUpdateRequest(BaseModel):
 class CartItemResponse(TimestampResponse):
     cart_id: UUID
     food_item_id: UUID
+    food_name: str
     quantity: int
     unit_price: Decimal
     subtotal: Decimal
@@ -26,3 +27,10 @@ class CartItemResponse(TimestampResponse):
 class CartResponse(TimestampResponse):
     user_id: UUID
     items: list[CartItemResponse]
+    total_items: int
+    subtotal: Decimal
+    delivery_fee: Decimal
+    tax_amount: Decimal
+    discount_amount: Decimal
+    grand_total: Decimal
+    currency: str = "NGN"
