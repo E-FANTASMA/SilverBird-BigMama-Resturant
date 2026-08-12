@@ -47,6 +47,29 @@ function withFallback<T>(promise: Promise<T>, fallback: T) {
   return promise.catch(() => fallback);
 }
 
+function getApiErrorMessage(error: unknown, fallback: string) {
+  if (typeof error === "object" && error !== null) {
+    const maybeResponse = (error as { response?: { data?: { detail?: unknown; message?: unknown } } }).response;
+    const detail = maybeResponse?.data?.detail;
+    const message = maybeResponse?.data?.message;
+
+    if (typeof detail === "string" && detail.trim()) {
+      return detail;
+    }
+    if (Array.isArray(detail) && detail.length > 0) {
+      const first = detail[0] as { msg?: unknown } | undefined;
+      if (typeof first?.msg === "string" && first.msg.trim()) {
+        return first.msg;
+      }
+    }
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+  }
+
+  return fallback;
+}
+
 export function useCategories() {
   return useQuery({
     queryKey: queryKeys.categories,
@@ -184,12 +207,19 @@ export function useLogin() {
         tokenType: response.data.token_type,
       });
     },
+    onError: (error) => toast.error(getApiErrorMessage(error, "Sign in failed")),
   });
 }
 
 export function useRegister() {
   return useMutation({
-    mutationFn: async (payload: Record<string, unknown>) => {
+    mutationFn: async (payload: {
+      first_name: string;
+      last_name: string;
+      email: string;
+      phone?: string;
+      password: string;
+    }) => {
       const response = await api.post<AuthResponse>("/auth/signup", payload);
       return saveSession({
         accessToken: response.data.access_token,
@@ -197,6 +227,7 @@ export function useRegister() {
         tokenType: response.data.token_type,
       });
     },
+    onError: (error) => toast.error(getApiErrorMessage(error, "Registration failed")),
   });
 }
 
@@ -206,6 +237,19 @@ export function useForgotPassword() {
       const response = await api.post<{ message: string; reset_token?: string }>("/auth/forgot-password", payload);
       return response.data;
     },
+    onSuccess: (data) => toast.success(data.message),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Password reset request failed")),
+  });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: async (payload: { reset_token: string; password: string; confirm_password: string }) => {
+      const response = await api.post<{ message: string }>("/auth/reset-password", payload);
+      return response.data;
+    },
+    onSuccess: (data) => toast.success(data.message),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Password reset failed")),
   });
 }
 

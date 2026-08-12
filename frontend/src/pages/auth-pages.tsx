@@ -2,9 +2,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Lock, Mail, Phone } from "lucide-react";
 import type { ReactNode } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
-import { useForgotPassword, useLogin, useRegister } from "@/api/hooks";
+import { useForgotPassword, useLogin, useRegister, useResetPassword } from "@/api/hooks";
 import { useAuth } from "@/auth/auth-store";
 import { MarketingShell } from "@/components/layout";
 import { Button, Card, TextInput } from "@/components/ui";
@@ -28,6 +28,20 @@ const registerSchema = z.object({
 const forgotSchema = z.object({
   email: z.string().email(),
 });
+
+const resetSchema = z
+  .object({
+    reset_token: z.string().min(1, "Reset token is required"),
+    password: z
+      .string()
+      .min(8)
+      .regex(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s])/, "Use upper, lower, number, and symbol"),
+    confirm_password: z.string().min(8),
+  })
+  .refine((values) => values.password === values.confirm_password, {
+    message: "Passwords do not match",
+    path: ["confirm_password"],
+  });
 
 export function LandingPage() {
   return (
@@ -164,7 +178,10 @@ export function RegisterPage() {
   });
 
   const onSubmit = form.handleSubmit(async (values: z.infer<typeof registerSchema>) => {
-    const session = await register.mutateAsync(values);
+    const session = await register.mutateAsync({
+      ...values,
+      phone: values.phone.trim() || undefined,
+    });
     setSession(session);
     navigate("/app/home");
   });
@@ -209,6 +226,7 @@ export function RegisterPage() {
 }
 
 export function ForgotPasswordPage() {
+  const navigate = useNavigate();
   const forgot = useForgotPassword();
   const form = useForm<z.infer<typeof forgotSchema>>({
     resolver: zodResolver(forgotSchema),
@@ -216,7 +234,10 @@ export function ForgotPasswordPage() {
   });
 
   const onSubmit = form.handleSubmit(async (values: z.infer<typeof forgotSchema>) => {
-    await forgot.mutateAsync(values);
+    const response = await forgot.mutateAsync(values);
+    if (response.reset_token) {
+      navigate(`/reset-password?token=${encodeURIComponent(response.reset_token)}`);
+    }
   });
 
   return (
@@ -242,6 +263,52 @@ export function ForgotPasswordPage() {
             {forgot.data.reset_token ? <p className="mt-2 break-all text-xs text-muted-foreground">Reset token: {forgot.data.reset_token}</p> : null}
           </Card>
         ) : null}
+      </form>
+    </AuthLayout>
+  );
+}
+
+export function ResetPasswordPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const reset = useResetPassword();
+  const form = useForm<z.infer<typeof resetSchema>>({
+    resolver: zodResolver(resetSchema),
+    defaultValues: {
+      reset_token: searchParams.get("token") ?? "",
+      password: "",
+      confirm_password: "",
+    },
+  });
+
+  const onSubmit = form.handleSubmit(async (values: z.infer<typeof resetSchema>) => {
+    await reset.mutateAsync(values);
+    navigate("/login");
+  });
+
+  return (
+    <AuthLayout
+      title="Choose a new password"
+      description="Enter the reset token you received and set a fresh password for your account."
+      footer={
+        <Link to="/forgot-password" className="text-sm font-semibold text-primary">
+          Need a new reset token?
+        </Link>
+      }
+    >
+      <form className="space-y-4" onSubmit={onSubmit}>
+        <Field label="Reset token" error={form.formState.errors.reset_token?.message}>
+          <TextInput {...form.register("reset_token")} placeholder="Paste your reset token" />
+        </Field>
+        <Field label="New password" error={form.formState.errors.password?.message}>
+          <TextInput icon={<Lock className="h-4 w-4" />} type="password" {...form.register("password")} placeholder="Create a strong password" />
+        </Field>
+        <Field label="Confirm new password" error={form.formState.errors.confirm_password?.message}>
+          <TextInput icon={<Lock className="h-4 w-4" />} type="password" {...form.register("confirm_password")} placeholder="Repeat your new password" />
+        </Field>
+        <Button className="w-full" size="lg" disabled={reset.isPending}>
+          {reset.isPending ? "Updating password..." : "Reset password"}
+        </Button>
       </form>
     </AuthLayout>
   );

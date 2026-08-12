@@ -15,7 +15,7 @@ import {
   ReportsPage,
   RevenueAnalyticsPage,
 } from "@/pages/admin-pages";
-import { ForgotPasswordPage, LandingPage, LoginPage, RegisterPage } from "@/pages/auth-pages";
+import { ForgotPasswordPage, LandingPage, LoginPage, RegisterPage, ResetPasswordPage } from "@/pages/auth-pages";
 import {
   AddressFormPage,
   CartPage,
@@ -76,6 +76,7 @@ export const router = createBrowserRouter([
   { path: "/delivery/login", element: <LoginPage /> },
   { path: "/register", element: <RegisterPage /> },
   { path: "/forgot-password", element: <ForgotPasswordPage /> },
+  { path: "/reset-password", element: <ResetPasswordPage /> },
   {
     element: <ProtectedRoute roles={["CUSTOMER"]} />,
     children: [
