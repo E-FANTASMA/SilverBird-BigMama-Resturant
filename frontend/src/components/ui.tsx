@@ -10,11 +10,13 @@ import {
 } from "lucide-react";
 import type {
   ButtonHTMLAttributes,
+  ForwardedRef,
   HTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
   TextareaHTMLAttributes,
 } from "react";
+import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 export { cn };
 
@@ -107,15 +109,19 @@ export function Badge({
   );
 }
 
-export function TextInput({
-  className,
-  icon,
-  ...props
-}: InputHTMLAttributes<HTMLInputElement> & { icon?: ReactNode }) {
+export const TextInput = forwardRef(function TextInput(
+  {
+    className,
+    icon,
+    ...props
+  }: InputHTMLAttributes<HTMLInputElement> & { icon?: ReactNode },
+  ref: ForwardedRef<HTMLInputElement>,
+) {
   return (
     <div className="relative">
       {icon ? <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">{icon}</div> : null}
       <input
+        ref={ref}
         className={cn(
           "h-12 w-full rounded-2xl border border-input bg-white px-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10",
           icon ? "pl-11" : "",
@@ -125,25 +131,33 @@ export function TextInput({
       />
     </div>
   );
-}
+});
 
-export function TextArea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export const TextArea = forwardRef(function TextArea(
+  props: TextareaHTMLAttributes<HTMLTextAreaElement>,
+  ref: ForwardedRef<HTMLTextAreaElement>,
+) {
   return (
     <textarea
+      ref={ref}
       className="min-h-28 w-full rounded-2xl border border-input bg-white px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
       {...props}
     />
   );
-}
+});
 
-export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+export const Select = forwardRef(function Select(
+  props: React.SelectHTMLAttributes<HTMLSelectElement>,
+  ref: ForwardedRef<HTMLSelectElement>,
+) {
   return (
     <select
+      ref={ref}
       className="h-12 w-full rounded-2xl border border-input bg-white px-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
       {...props}
     />
   );
-}
+});
 
 export function FoodCard({
   image,

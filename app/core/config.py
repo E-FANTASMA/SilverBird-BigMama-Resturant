@@ -12,6 +12,13 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = True
     api_v1_prefix: str = "/api/v1"
+    backend_cors_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://silver-bird-big-mama-resturant.vercel.app",
+        ]
+    )
 
     database_url: str = Field(
         default="postgresql+psycopg://postgres:postgres@localhost:5432/silverbird_bigmama_restaurant"
@@ -63,6 +70,13 @@ class Settings(BaseSettings):
                 return False
             if normalized in {"development", "dev", "true", "1", "yes"}:
                 return True
+        return value
+
+    @field_validator("backend_cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value):
+        if isinstance(value, str):
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
 
 
