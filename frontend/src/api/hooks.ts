@@ -214,6 +214,7 @@ export function useLogin() {
 export function useRegister() {
   return useMutation({
     mutationFn: async (payload: {
+      role: "CUSTOMER" | "DELIVERY_PERSONNEL";
       first_name: string;
       last_name: string;
       email: string;

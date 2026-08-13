@@ -2,9 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
+from app.application.services.auth_service import AuthService
 from app.core.config import get_settings
 from app.core.exception_handlers import register_exception_handlers
 from app.core.logging import configure_logging
+from app.domain.enums import RoleName
+from app.infrastructure.database.base import Base
+from app.infrastructure.database.models.role import RoleModel
+from app.infrastructure.database.session import SessionLocal, engine
 from app.middleware.request_id import RequestIDMiddleware
 
 
@@ -31,6 +36,17 @@ def create_app() -> FastAPI:
     app.add_middleware(RequestIDMiddleware)
     register_exception_handlers(app)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+    @app.on_event("startup")
+    async def ensure_bootstrap_data() -> None:
+        Base.metadata.create_all(bind=engine)
+        with SessionLocal() as session:
+            existing = {role.name for role in session.query(RoleModel).all()}
+            for role_name in RoleName:
+                if role_name.value not in existing:
+                    session.add(RoleModel(name=role_name.value, description=f"{role_name.value.title()} role"))
+            session.commit()
+            AuthService(session).seed_initial_admin()
 
     @app.get("/", tags=["Root"])
     async def root() -> dict[str, str]:

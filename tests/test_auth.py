@@ -36,6 +36,37 @@ def test_customer_signup_and_login_flow(client, session) -> None:
     assert login_response.json()["access_token"]
 
 
+def test_delivery_signup_and_login_flow(client, session) -> None:
+    seed_roles(session)
+
+    signup_payload = {
+        "role": RoleName.DELIVERY_PERSONNEL.value,
+        "first_name": "Tari",
+        "last_name": "Rider",
+        "email": "tari@example.com",
+        "phone": "08012345678",
+        "password": "StrongPass1!",
+    }
+    signup_response = client.post("/api/v1/auth/signup", json=signup_payload)
+
+    assert signup_response.status_code == 200
+    signup_data = signup_response.json()
+    assert signup_data["token_type"] == "bearer"
+    assert signup_data["access_token"]
+    assert signup_data["refresh_token"]
+
+    user = session.query(UserModel).filter_by(email="tari@example.com").one()
+    assert user.role.name == RoleName.DELIVERY_PERSONNEL.value
+    assert user.phone == "+2348012345678"
+
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={"email": signup_payload["email"], "password": signup_payload["password"]},
+    )
+    assert login_response.status_code == 200
+    assert login_response.json()["access_token"]
+
+
 def test_signup_rejects_weak_password(client, session) -> None:
     seed_roles(session)
 

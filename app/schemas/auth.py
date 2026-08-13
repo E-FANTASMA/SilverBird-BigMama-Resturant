@@ -15,6 +15,8 @@ class PhonePasswordValidationMixin(BaseModel):
         if value is None:
             return None
         normalized = re.sub(r"[\s\-()]", "", value)
+        if normalized.startswith("0") and len(normalized) == 11 and normalized.isdigit():
+            normalized = f"+234{normalized[1:]}"
         if normalized and not PHONE_PATTERN.fullmatch(normalized):
             raise ValueError("Phone number must be in a valid international format")
         return normalized
@@ -30,11 +32,19 @@ class PhonePasswordValidationMixin(BaseModel):
 
 
 class SignupRequest(PhonePasswordValidationMixin):
+    role: RoleName = RoleName.CUSTOMER
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
     email: EmailStr
     phone: str | None = None
     password: str = Field(min_length=8)
+
+    @field_validator("role")
+    @classmethod
+    def validate_signup_role(cls, value: RoleName) -> RoleName:
+        if value not in {RoleName.CUSTOMER, RoleName.DELIVERY_PERSONNEL}:
+            raise ValueError("Only customer and delivery accounts can sign up here")
+        return value
 
 
 class LoginRequest(BaseModel):

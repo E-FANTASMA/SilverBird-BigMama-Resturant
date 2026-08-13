@@ -47,7 +47,7 @@ class AuthService:
         self.password_reset_tokens = PasswordResetTokenRepository(session)
 
     def signup(self, payload: SignupRequest) -> AuthResponse:
-        customer_role = self._get_role(RoleName.CUSTOMER)
+        role = self._get_role(payload.role)
         user = self._create_user(
             first_name=payload.first_name,
             last_name=payload.last_name,
@@ -55,10 +55,11 @@ class AuthService:
             phone=payload.phone,
             password=payload.password,
             is_verified=False,
-            role_id=customer_role.id,
+            role_id=role.id,
         )
-        self.session.add(CartModel(user_id=user.id))
-        tokens = self._issue_tokens(user, customer_role.name)
+        if payload.role == RoleName.CUSTOMER:
+            self.session.add(CartModel(user_id=user.id))
+        tokens = self._issue_tokens(user, role.name)
         self.session.commit()
         return tokens
 

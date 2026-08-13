@@ -7,7 +7,20 @@ import { z } from "zod";
 import { useForgotPassword, useLogin, useRegister, useResetPassword } from "@/api/hooks";
 import { useAuth } from "@/auth/auth-store";
 import { MarketingShell } from "@/components/layout";
-import { Button, Card, TextInput } from "@/components/ui";
+import { Button, Card, TextInput, cn } from "@/components/ui";
+
+const signupRoles = [
+  {
+    value: "CUSTOMER",
+    label: "Customer",
+    description: "Order meals, track deliveries, and manage your profile.",
+  },
+  {
+    value: "DELIVERY_PERSONNEL",
+    label: "Delivery",
+    description: "Accept assigned orders and manage delivery updates.",
+  },
+] as const;
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -15,10 +28,14 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
+  role: z.enum(["CUSTOMER", "DELIVERY_PERSONNEL"]),
   first_name: z.string().min(1),
   last_name: z.string().min(1),
   email: z.string().email(),
-  phone: z.string().min(8),
+  phone: z
+    .string()
+    .min(8)
+    .regex(/^(\+?[1-9]\d{7,14}|0\d{10})$/, "Use +2348012345678 or 08012345678"),
   password: z
     .string()
     .min(8)
@@ -174,7 +191,7 @@ export function RegisterPage() {
   const register = useRegister();
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { first_name: "", last_name: "", email: "", phone: "", password: "" },
+    defaultValues: { role: "CUSTOMER", first_name: "", last_name: "", email: "", phone: "", password: "" },
   });
 
   const onSubmit = form.handleSubmit(async (values: z.infer<typeof registerSchema>) => {
@@ -183,7 +200,7 @@ export function RegisterPage() {
       phone: values.phone.trim() || undefined,
     });
     setSession(session);
-    navigate("/app/home");
+    navigate(values.role === "DELIVERY_PERSONNEL" ? "/delivery/dashboard" : "/app/home");
   });
 
   return (
@@ -200,6 +217,35 @@ export function RegisterPage() {
       }
     >
       <form className="grid gap-4" onSubmit={onSubmit}>
+        <Field label="Sign up as" error={form.formState.errors.role?.message}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {signupRoles.map((roleOption) => {
+              const selected = form.watch("role") === roleOption.value;
+              return (
+                <button
+                  key={roleOption.value}
+                  type="button"
+                  onClick={() => form.setValue("role", roleOption.value, { shouldDirty: true, shouldValidate: true })}
+                  className={cn(
+                    "rounded-2xl border p-4 text-left transition",
+                    selected ? "border-primary bg-primary/6 ring-2 ring-primary/15" : "border-border bg-white hover:border-primary/40",
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-semibold text-foreground">{roleOption.label}</span>
+                    <span
+                      className={cn(
+                        "h-4 w-4 rounded-full border",
+                        selected ? "border-primary bg-primary shadow-[inset_0_0_0_4px_white]" : "border-muted-foreground/40",
+                      )}
+                    />
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">{roleOption.description}</p>
+                </button>
+              );
+            })}
+          </div>
+        </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="First name" error={form.formState.errors.first_name?.message}>
             <TextInput {...form.register("first_name")} placeholder="Amara" />
@@ -211,8 +257,12 @@ export function RegisterPage() {
         <Field label="Email" error={form.formState.errors.email?.message}>
           <TextInput icon={<Mail className="h-4 w-4" />} {...form.register("email")} placeholder="name@example.com" />
         </Field>
-        <Field label="Phone" error={form.formState.errors.phone?.message}>
-          <TextInput icon={<Phone className="h-4 w-4" />} {...form.register("phone")} placeholder="+2348012345678" />
+        <Field
+          label="Phone"
+          hint="Use international format like +2348012345678, or local format like 08012345678."
+          error={form.formState.errors.phone?.message}
+        >
+          <TextInput icon={<Phone className="h-4 w-4" />} {...form.register("phone")} placeholder="+2348012345678 or 08012345678" />
         </Field>
         <Field label="Password" error={form.formState.errors.password?.message}>
           <TextInput icon={<Lock className="h-4 w-4" />} type="password" {...form.register("password")} placeholder="Create a strong password" />
@@ -368,10 +418,12 @@ function AuthLayout({
 
 function Field({
   label,
+  hint,
   error,
   children,
 }: {
   label: string;
+  hint?: string;
   error?: string;
   children: ReactNode;
 }) {
@@ -379,6 +431,7 @@ function Field({
     <label className="block space-y-2">
       <span className="text-sm font-medium">{label}</span>
       {children}
+      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
       {error ? <span className="text-xs text-danger">{error}</span> : null}
     </label>
   );
