@@ -73,14 +73,14 @@ function getApiErrorMessage(error: unknown, fallback: string) {
 export function useCategories() {
   return useQuery({
     queryKey: queryKeys.categories,
-    queryFn: () => withFallback(api.get<Category[]>("/categories").then((r) => r.data), demoCategories),
+    queryFn: () => api.get<Category[]>("/categories").then((r) => r.data),
   });
 }
 
 export function useFoods() {
   return useQuery({
     queryKey: queryKeys.foods,
-    queryFn: () => withFallback(api.get<Food[]>("/foods").then((r) => r.data), demoFoods),
+    queryFn: () => api.get<Food[]>("/foods").then((r) => r.data),
   });
 }
 
@@ -88,11 +88,7 @@ export function useFood(foodId?: string) {
   return useQuery({
     enabled: Boolean(foodId),
     queryKey: queryKeys.food(foodId ?? ""),
-    queryFn: () =>
-      withFallback(
-        api.get<Food>(`/foods/${foodId}`).then((r) => r.data),
-        demoFoods.find((food) => food.id === foodId) ?? demoFoods[0],
-      ),
+    queryFn: () => api.get<Food>(`/foods/${foodId}`).then((r) => r.data),
   });
 }
 

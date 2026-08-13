@@ -72,8 +72,8 @@ const profileSchema = z.object({
 });
 
 export function CustomerHomePage() {
-  const { data: foods, isLoading } = useFoods();
-  const { data: categories } = useCategories();
+  const { data: foods, isLoading: foodsLoading, isError: foodsError } = useFoods();
+  const { data: categories, isLoading: categoriesLoading, isError: categoriesError } = useCategories();
 
   return (
     <div className="space-y-8">
@@ -127,21 +127,29 @@ export function CustomerHomePage() {
           title="Browse by category"
           description="A cleaner menu entry point with crisp grouping and consistent spacing."
         />
-        <div className="flex flex-wrap gap-3">
-          {categories?.map((category) => (
-            <FilterChip key={category.id} label={category.name} />
-          ))}
-        </div>
+        {categoriesLoading ? (
+          <LoadingState label="Loading menu categories..." />
+        ) : categoriesError ? (
+          <ErrorState title="Could not load categories" description="The menu categories are unavailable right now because the backend did not respond." />
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {categories?.map((category) => (
+              <FilterChip key={category.id} label={category.name} />
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="space-y-4">
         <SectionHeading title="Popular right now" description="Signature plates styled as premium product cards." />
-        {isLoading ? (
+        {foodsLoading ? (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
               <Skeleton key={index} className="h-80" />
             ))}
           </div>
+        ) : foodsError ? (
+          <ErrorState title="Could not load menu items" description="Popular dishes could not be loaded from the backend." />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {foods?.slice(0, 4).map((food) => (
@@ -168,8 +176,8 @@ export function CustomerHomePage() {
 
 export function CategoriesPage() {
   const location = useLocation();
-  const { data: categories } = useCategories();
-  const { data: foods, isLoading, isError } = useFoods();
+  const { data: categories, isLoading: categoriesLoading, isError: categoriesError } = useCategories();
+  const { data: foods, isLoading: foodsLoading, isError: foodsError } = useFoods();
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const detailBasePath = location.pathname.startsWith("/menu") ? "/menu" : "/app/foods";
   const isPublicMenu = location.pathname.startsWith("/menu");
@@ -211,24 +219,30 @@ export function CategoriesPage() {
         <SectionHeading title="Menu Categories" description="Built for quick scanning on mobile and expansive browsing on desktop." />
       )}
 
-      <Card className="rounded-[2rem] border-white/70 p-4 sm:p-5">
-        <div className="flex flex-wrap gap-3">
-          <FilterChip label="All" active={activeCategory === "all"} onClick={() => setActiveCategory("all")} />
-          {categories?.map((category) => (
-            <FilterChip
-              key={category.id}
-              label={category.name}
-              active={activeCategory === category.id}
-              onClick={() => setActiveCategory(category.id)}
-            />
-          ))}
-        </div>
-      </Card>
-
-      {isLoading ? (
+      {categoriesLoading ? (
         <LoadingState label="Loading menu categories..." />
-      ) : isError ? (
-        <ErrorState />
+      ) : categoriesError ? (
+        <ErrorState title="Could not load categories" description="The backend did not return menu categories." />
+      ) : (
+        <Card className="rounded-[2rem] border-white/70 p-4 sm:p-5">
+          <div className="flex flex-wrap gap-3">
+            <FilterChip label="All" active={activeCategory === "all"} onClick={() => setActiveCategory("all")} />
+            {categories?.map((category) => (
+              <FilterChip
+                key={category.id}
+                label={category.name}
+                active={activeCategory === category.id}
+                onClick={() => setActiveCategory(category.id)}
+              />
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {foodsLoading ? (
+        <LoadingState label="Loading menu categories..." />
+      ) : foodsError ? (
+        <ErrorState title="Could not load menu items" description="The backend did not return food items for this menu." />
       ) : visibleFoods.length === 0 ? (
         <EmptyState title="No meals here yet" description="This category is ready for items as soon as the backend returns them." />
       ) : (
@@ -259,13 +273,17 @@ export function FoodDetailsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { foodId = "" } = useParams();
-  const { data: food, isLoading } = useFood(foodId);
+  const { data: food, isLoading, isError } = useFood(foodId);
   const addToCart = useAddToCart();
   const [quantity, setQuantity] = useState(1);
   const isPublicMenu = location.pathname.startsWith("/menu");
 
   if (isLoading) {
     return <LoadingState label="Loading meal details..." />;
+  }
+
+  if (isError) {
+    return <ErrorState title="Could not load meal" description="The backend did not return this meal's details." />;
   }
 
   if (!food) {
@@ -338,7 +356,7 @@ export function SearchResultsPage() {
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const query = params.get("q") ?? "";
-  const { data: foods } = useFoods();
+  const { data: foods, isLoading, isError } = useFoods();
   const [page, setPage] = useState(1);
   const filtered = foods?.filter((food) => food.name.toLowerCase().includes(query.toLowerCase())) ?? [];
   const pageFoods = filtered.slice((page - 1) * 6, page * 6);
@@ -354,7 +372,11 @@ export function SearchResultsPage() {
           Sort & Filter
         </Button>
       </div>
-      {pageFoods.length === 0 ? (
+      {isLoading ? (
+        <LoadingState label="Loading search results..." />
+      ) : isError ? (
+        <ErrorState title="Could not search menu" description="Search results are unavailable because the backend request failed." />
+      ) : pageFoods.length === 0 ? (
         <EmptyState title="No results yet" description="Try another search term or explore full categories." />
       ) : (
         <>
