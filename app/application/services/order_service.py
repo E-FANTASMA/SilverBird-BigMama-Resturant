@@ -49,8 +49,9 @@ class OrderService:
             if not payload.delivery_address_id:
                 raise ValidationException("Delivery address is required")
             address = self.addresses.validate_delivery_address(user_id, payload.delivery_address_id)
-            distance_km = self.pricing_service.calculate_delivery_distance_km(float(address.latitude), float(address.longitude))
-            delivery_fee = self.pricing_service.calculate_delivery_fee(distance_km)
+            if address.latitude is not None and address.longitude is not None:
+                distance_km = self.pricing_service.calculate_delivery_distance_km(float(address.latitude), float(address.longitude))
+                delivery_fee = self.pricing_service.calculate_delivery_fee(distance_km)
             delivery_address_id = address.id
         elif payload.order_type == OrderType.PICKUP:
             if not payload.scheduled_pickup_time:

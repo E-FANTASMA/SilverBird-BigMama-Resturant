@@ -142,6 +142,33 @@ export function useAddresses() {
   });
 }
 
+export function useCreateAddress() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Record<string, unknown>) => api.post<Address>("/addresses", payload).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.addresses });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cart });
+      toast.success("Address saved");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error, "Could not save address")),
+  });
+}
+
+export function useUpdateAddress() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { addressId: string; data: Record<string, unknown> }) =>
+      api.patch<Address>(`/addresses/${payload.addressId}`, payload.data).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.addresses });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cart });
+      toast.success("Address updated");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error, "Could not update address")),
+  });
+}
+
 export function useProfile() {
   return useQuery({
     queryKey: queryKeys.profile,
@@ -300,7 +327,7 @@ export function useCreateOrder() {
       queryClient.invalidateQueries({ queryKey: queryKeys.cart });
       toast.success("Order created");
     },
-    onError: () => toast.error("Order creation failed"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Order creation failed")),
   });
 }
 

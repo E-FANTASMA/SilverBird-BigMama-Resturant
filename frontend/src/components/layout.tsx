@@ -31,6 +31,7 @@ type NavItem = {
 const customerNav: NavItem[] = [
   { to: "/app/home", label: "Home", icon: <Home className="h-4 w-4" /> },
   { to: "/app/categories", label: "Menu", icon: <MenuSquare className="h-4 w-4" /> },
+  { to: "/app/cart", label: "Cart", icon: <ShoppingBag className="h-4 w-4" /> },
   { to: "/app/orders", label: "Orders", icon: <Package className="h-4 w-4" /> },
   { to: "/app/addresses", label: "Addresses", icon: <MapPinned className="h-4 w-4" /> },
   { to: "/app/profile", label: "Profile", icon: <UserRound className="h-4 w-4" /> },

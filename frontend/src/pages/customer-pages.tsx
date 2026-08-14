@@ -14,7 +14,7 @@ import {
   Truck,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { z } from "zod";
@@ -23,6 +23,7 @@ import {
   useAddresses,
   useCart,
   useCategories,
+  useCreateAddress,
   useCreateOrder,
   useFood,
   useFoods,
@@ -30,6 +31,7 @@ import {
   useOrder,
   useOrders,
   useProfile,
+  useUpdateAddress,
   useUpdateCartItem,
   useVerifyPayment,
 } from "@/api/hooks";
@@ -63,7 +65,10 @@ const addressSchema = z.object({
   city: z.string().min(1),
   state: z.string().min(1),
   phone: z.string().min(8),
+  latitude: z.string().refine((value) => !value || Number.isFinite(Number(value)), "Latitude must be a number").optional(),
+  longitude: z.string().refine((value) => !value || Number.isFinite(Number(value)), "Longitude must be a number").optional(),
 });
+type AddressFormValues = z.infer<typeof addressSchema>;
 
 const profileSchema = z.object({
   first_name: z.string().min(1),
@@ -456,6 +461,9 @@ export function CartPage() {
         <Button className="mt-6 w-full" size="lg" onClick={() => navigate("/app/checkout")}>
           Proceed to checkout
         </Button>
+        <Button className="mt-3 w-full" variant="outline" onClick={() => navigate("/app/addresses")}>
+          Manage delivery addresses
+        </Button>
       </Card>
     </div>
   );
@@ -467,14 +475,47 @@ export function CheckoutPage() {
   const createOrder = useCreateOrder();
   const navigate = useNavigate();
   const [orderType, setOrderType] = useState<"DELIVERY" | "PICKUP" | "DINE_IN">("DELIVERY");
-  const [addressId, setAddressId] = useState(addresses?.[0]?.id ?? "");
+  const [addressId, setAddressId] = useState("");
   const [tableNumber, setTableNumber] = useState("");
+  const [scheduledPickupTime, setScheduledPickupTime] = useState("");
   const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    if (!addresses || addresses.length === 0) {
+      if (addressId) {
+        setAddressId("");
+      }
+      return;
+    }
+
+    const selectedAddressStillExists = addresses.some((address) => address.id === addressId);
+    if (selectedAddressStillExists) {
+      return;
+    }
+
+    const preferredAddress = addresses.find((address) => address.is_default) ?? addresses[0];
+    setAddressId(preferredAddress.id);
+  }, [addresses, addressId]);
+
+  if (!cart || cart.items.length === 0) {
+    return (
+      <EmptyState
+        title="Your cart is empty"
+        description="Add a few meals before heading into checkout."
+        action={
+          <Link to="/app/categories">
+            <Button>Browse menu</Button>
+          </Link>
+        }
+      />
+    );
+  }
 
   const submitOrder = async () => {
     const order = await createOrder.mutateAsync({
       order_type: orderType,
       delivery_address_id: orderType === "DELIVERY" ? addressId : null,
+      scheduled_pickup_time: orderType === "PICKUP" ? new Date(scheduledPickupTime).toISOString() : null,
       table_number: orderType === "DINE_IN" ? tableNumber : null,
       notes,
     });
@@ -496,21 +537,45 @@ export function CheckoutPage() {
         {orderType === "DELIVERY" ? (
           <Card className="p-6">
             <h3 className="font-semibold">Delivery address</h3>
-            <div className="mt-4 grid gap-3">
-              {addresses?.map((address) => (
-                <button
-                  key={address.id}
-                  onClick={() => setAddressId(address.id)}
-                  className={`rounded-2xl border p-4 text-left transition ${addressId === address.id ? "border-primary bg-primary/5" : "border-border bg-white"}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium">{address.label}</p>
-                    {address.is_default ? <Badge tone="success">Default</Badge> : null}
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground">{address.address}, {address.city}, {address.state}</p>
-                </button>
-              ))}
-            </div>
+            {addresses && addresses.length > 0 ? (
+              <div className="mt-4 grid gap-3">
+                {addresses.map((address) => (
+                  <button
+                    key={address.id}
+                    type="button"
+                    onClick={() => setAddressId(address.id)}
+                    className={`rounded-2xl border p-4 text-left transition ${addressId === address.id ? "border-primary bg-primary/5" : "border-border bg-white"}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">{address.label}</p>
+                      {address.is_default ? <Badge tone="success">Default</Badge> : null}
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">{address.address}, {address.city}, {address.state}</p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No saved addresses yet"
+                description="Add a delivery address first so you can complete checkout."
+                action={
+                  <Link to="/app/addresses/new">
+                    <Button>Add address</Button>
+                  </Link>
+                }
+              />
+            )}
+          </Card>
+        ) : null}
+        {orderType === "PICKUP" ? (
+          <Card className="p-6">
+            <Field label="Pickup time">
+              <TextInput
+                type="datetime-local"
+                value={scheduledPickupTime}
+                onChange={(event) => setScheduledPickupTime(event.target.value)}
+              />
+            </Field>
           </Card>
         ) : null}
         {orderType === "DINE_IN" ? (
@@ -529,10 +594,20 @@ export function CheckoutPage() {
       <Card className="h-fit p-6">
         <SectionHeading title="Order recap" description="Clear totals and a strong completion CTA." />
         <div className="mt-6 space-y-4">
-          <SummaryRow label="Items" value={`${cart?.total_items ?? 0}`} />
-          <SummaryRow label="Estimated total" value={formatCurrency(cart?.grand_total ?? 0)} strong />
+          <SummaryRow label="Items" value={`${cart.total_items}`} />
+          <SummaryRow label="Estimated total" value={formatCurrency(cart.grand_total)} strong />
         </div>
-        <Button className="mt-6 w-full" size="lg" onClick={submitOrder} disabled={createOrder.isPending}>
+        <Button
+          className="mt-6 w-full"
+          size="lg"
+          onClick={submitOrder}
+          disabled={
+            createOrder.isPending ||
+            (orderType === "DELIVERY" && !addressId) ||
+            (orderType === "PICKUP" && !scheduledPickupTime) ||
+            (orderType === "DINE_IN" && !tableNumber.trim())
+          }
+        >
           {createOrder.isPending ? "Creating order..." : "Continue to payment"}
         </Button>
       </Card>
@@ -678,68 +753,148 @@ export function SavedAddressesPage() {
         description="Elegant address management with strong readability and clear defaults."
         action={<Link to="/app/addresses/new"><Button>Add address</Button></Link>}
       />
-      <div className="grid gap-4 md:grid-cols-2">
-        {addresses?.map((address) => (
-          <Card key={address.id} className="p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <MapPinned className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold">{address.label}</h3>
+      {addresses && addresses.length > 0 ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          {addresses.map((address) => (
+            <Card key={address.id} className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <MapPinned className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold">{address.label}</h3>
+                  </div>
+                  <p className="mt-3 text-sm text-muted-foreground">{address.address}, {address.city}, {address.state}</p>
                 </div>
-                <p className="mt-3 text-sm text-muted-foreground">{address.address}, {address.city}, {address.state}</p>
+                {address.is_default ? <Badge tone="success">Default</Badge> : null}
               </div>
-              {address.is_default ? <Badge tone="success">Default</Badge> : null}
-            </div>
-            <div className="mt-5 flex gap-3">
-              <Link to={`/app/addresses/${address.id}/edit`}>
-                <Button variant="outline" size="sm">Edit</Button>
-              </Link>
-            </div>
-          </Card>
-        ))}
-      </div>
+              <div className="mt-5 flex gap-3">
+                <Link to={`/app/addresses/${address.id}/edit`}>
+                  <Button variant="outline" size="sm">Edit</Button>
+                </Link>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          title="No saved addresses yet"
+          description="Your saved delivery addresses will appear here once you add one."
+          action={
+            <Link to="/app/addresses/new">
+              <Button>Add your first address</Button>
+            </Link>
+          }
+        />
+      )}
     </div>
   );
 }
 
 export function AddressFormPage() {
-  const form = useForm<z.infer<typeof addressSchema>>({
-    resolver: zodResolver(addressSchema),
-    defaultValues: { label: "", address: "", city: "", state: "Lagos", phone: "" },
-  });
   const navigate = useNavigate();
+  const { addressId } = useParams();
+  const isEditing = Boolean(addressId);
+  const { data: addresses } = useAddresses();
+  const createAddress = useCreateAddress();
+  const updateAddress = useUpdateAddress();
+  const currentAddress = addresses?.find((entry) => entry.id === addressId);
+  const initialValues: AddressFormValues = currentAddress
+    ? {
+        label: currentAddress.label,
+        address: currentAddress.address,
+        city: currentAddress.city,
+        state: currentAddress.state,
+        phone: currentAddress.phone,
+        latitude: currentAddress.latitude != null ? String(currentAddress.latitude) : "",
+        longitude: currentAddress.longitude != null ? String(currentAddress.longitude) : "",
+      }
+    : { label: "", address: "", city: "", state: "Lagos", phone: "", latitude: "", longitude: "" };
+
+  const onSubmit = async (values: AddressFormValues) => {
+    const latitude = values.latitude?.trim() ? Number(values.latitude) : null;
+    const longitude = values.longitude?.trim() ? Number(values.longitude) : null;
+    const payload = {
+      label: values.label,
+      address: values.address,
+      city: values.city,
+      state: values.state,
+      phone: values.phone,
+      latitude,
+      longitude,
+    };
+
+    if (isEditing && addressId) {
+      await updateAddress.mutateAsync({ addressId, data: payload });
+    } else {
+      await createAddress.mutateAsync(payload);
+    }
+
+    navigate("/app/addresses");
+  };
 
   return (
     <Card className="mx-auto max-w-3xl p-6">
-      <SectionHeading title="Add or Edit Address" description="Production-style form spacing, validation, and hierarchy." />
-      <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={form.handleSubmit(() => navigate("/app/addresses"))}>
-        <Field label="Label" error={form.formState.errors.label?.message}>
-          <TextInput {...form.register("label")} placeholder="Home" />
-        </Field>
-        <Field label="Phone" error={form.formState.errors.phone?.message}>
-          <TextInput {...form.register("phone")} placeholder="+2348012345678" />
-        </Field>
-        <div className="sm:col-span-2">
-          <Field label="Address" error={form.formState.errors.address?.message}>
-            <TextInput {...form.register("address")} placeholder="12 Admiralty Way" />
-          </Field>
-        </div>
-        <Field label="City" error={form.formState.errors.city?.message}>
-          <TextInput {...form.register("city")} placeholder="Lekki" />
-        </Field>
-        <Field label="State" error={form.formState.errors.state?.message}>
-          <Select {...form.register("state")}>
-            <option>Lagos</option>
-            <option>FCT</option>
-            <option>Rivers</option>
-          </Select>
-        </Field>
-        <div className="sm:col-span-2">
-          <Button>Save address</Button>
-        </div>
-      </form>
+      <SectionHeading
+        title={isEditing ? "Edit Address" : "Add Address"}
+        description="Production-style form spacing, validation, and hierarchy."
+      />
+      <AddressEditorForm
+        key={currentAddress ? `${currentAddress.id}-${currentAddress.updated_at}` : "new-address"}
+        defaultValues={initialValues}
+        onSubmit={onSubmit}
+        isSaving={createAddress.isPending || updateAddress.isPending}
+      />
     </Card>
+  );
+}
+
+function AddressEditorForm({
+  defaultValues,
+  onSubmit,
+  isSaving,
+}: {
+  defaultValues: AddressFormValues;
+  onSubmit: (values: AddressFormValues) => Promise<void>;
+  isSaving: boolean;
+}) {
+  const form = useForm<AddressFormValues>({
+    resolver: zodResolver(addressSchema),
+    defaultValues,
+  });
+
+  return (
+    <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+      <Field label="Label" error={form.formState.errors.label?.message}>
+        <TextInput {...form.register("label")} placeholder="Home" />
+      </Field>
+      <Field label="Phone" error={form.formState.errors.phone?.message}>
+        <TextInput {...form.register("phone")} placeholder="+2348012345678" />
+      </Field>
+      <div className="sm:col-span-2">
+        <Field label="Address" error={form.formState.errors.address?.message}>
+          <TextInput {...form.register("address")} placeholder="12 Admiralty Way" />
+        </Field>
+      </div>
+      <Field label="City" error={form.formState.errors.city?.message}>
+        <TextInput {...form.register("city")} placeholder="Lekki" />
+      </Field>
+      <Field label="State" error={form.formState.errors.state?.message}>
+        <Select {...form.register("state")}>
+          <option>Lagos</option>
+          <option>FCT</option>
+          <option>Rivers</option>
+        </Select>
+      </Field>
+      <Field label="Latitude (optional)" error={form.formState.errors.latitude?.message}>
+        <TextInput {...form.register("latitude")} placeholder="6.4698" />
+      </Field>
+      <Field label="Longitude (optional)" error={form.formState.errors.longitude?.message}>
+        <TextInput {...form.register("longitude")} placeholder="3.5852" />
+      </Field>
+      <div className="sm:col-span-2">
+        <Button disabled={isSaving}>{isSaving ? "Saving..." : "Save address"}</Button>
+      </div>
+    </form>
   );
 }
 

@@ -158,6 +158,45 @@ def test_checkout_creates_delivery_order_and_clears_cart(client, session) -> Non
     assert cart.json()["grand_total"] == "0.00"
 
 
+def test_checkout_allows_delivery_address_without_coordinates(client, session) -> None:
+    seed_roles(session)
+    CategoryService(session).seed_default_categories()
+    FoodService(session).seed_default_menu()
+    token = create_customer(session, email="checkout-no-coords@example.com")
+    food = FoodService(session).list_foods()[0]
+
+    address = client.post(
+        "/api/v1/addresses",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "label": "Home",
+            "address": "18 Freedom Way",
+            "city": "Lekki",
+            "state": "Lagos",
+            "phone": "+2348044444444",
+            "is_default": True,
+        },
+    )
+    assert address.status_code == 200
+
+    add_item = client.post(
+        "/api/v1/cart/items",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"food_item_id": str(food.id), "quantity": 1},
+    )
+    assert add_item.status_code == 200
+
+    create_order = client.post(
+        "/api/v1/orders",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"order_type": "DELIVERY", "delivery_address_id": address.json()["id"]},
+    )
+    assert create_order.status_code == 200
+    order_payload = create_order.json()
+    assert order_payload["delivery_address_id"] == address.json()["id"]
+    assert Decimal(order_payload["delivery_fee"]) == Decimal("0")
+
+
 def test_pickup_requires_future_time(client, session) -> None:
     seed_roles(session)
     CategoryService(session).seed_default_categories()

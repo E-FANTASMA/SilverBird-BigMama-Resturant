@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import ForbiddenException, NotFoundException, ValidationException
+from app.core.exceptions import ForbiddenException, NotFoundException
 from app.infrastructure.database.models.address import DeliveryAddressModel
 from app.infrastructure.database.repositories.address_repository import AddressRepository
 from app.schemas.address import AddressCreateRequest, AddressUpdateRequest
@@ -80,10 +80,7 @@ class AddressService:
         return self.addresses.get_default_by_user_id(user_id)
 
     def validate_delivery_address(self, user_id, address_id):
-        address = self._get_owned_address(user_id, address_id)
-        if address.latitude is None or address.longitude is None:
-            raise ValidationException("Delivery address coordinates are required for delivery orders")
-        return address
+        return self._get_owned_address(user_id, address_id)
 
     def _get_owned_address(self, user_id, address_id):
         address = self.addresses.get_by_user_id_and_id(user_id, address_id)
