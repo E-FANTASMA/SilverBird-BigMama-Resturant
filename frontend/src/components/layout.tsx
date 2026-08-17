@@ -19,7 +19,7 @@ import {
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "@/auth/auth-store";
-import { useLogout } from "@/api/hooks";
+import { useLogout, useProfile } from "@/api/hooks";
 import { Button, Card, SearchInput, cn } from "@/components/ui";
 
 type NavItem = {
@@ -68,6 +68,9 @@ export function DashboardShell({ nav, title }: { nav: NavItem[]; title: string }
   const navigate = useNavigate();
   const { setSession } = useAuth();
   const logout = useLogout();
+  const { data: profile } = useProfile();
+
+  const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Guest";
 
   const handleLogout = async () => {
     await logout.mutateAsync();
@@ -111,8 +114,7 @@ export function DashboardShell({ nav, title }: { nav: NavItem[]; title: string }
           <Card className="p-4 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Welcome back</p>
-                <h2 className="text-xl font-semibold">Premium restaurant operations, beautifully organized.</h2>
+                <h2 className="text-xl font-semibold">Welcome back, {displayName}.</h2>
               </div>
               <div className="flex items-center gap-3">
                 <div className="hidden w-72 sm:block">

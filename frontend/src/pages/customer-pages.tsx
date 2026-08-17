@@ -616,6 +616,8 @@ export function PaymentPage() {
   const orderId = params.get("orderId") ?? demoOrders[0].id;
   const initializePayment = useInitializePayment();
   const navigate = useNavigate();
+  const paymentMethods = ["Card", "Bank Transfer", "Wallet"] as const;
+  const [paymentMethod, setPaymentMethod] = useState<(typeof paymentMethods)[number]>("Card");
 
   const handlePayment = async () => {
     const response = await initializePayment.mutateAsync(orderId);
@@ -628,10 +630,17 @@ export function PaymentPage() {
       <Card className="p-6 sm:p-8">
         <SectionHeading title="Payment" description="Choose how you would like to pay." />
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          {["Card", "Bank Transfer", "Wallet"].map((option) => (
-            <Card key={option} className="p-5">
+          {paymentMethods.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setPaymentMethod(option)}
+              className={`rounded-3xl border p-5 text-left transition ${
+                paymentMethod === option ? "border-primary bg-primary/5 ring-2 ring-primary/15" : "border-border bg-white hover:border-primary/40"
+              }`}
+            >
               <h3 className="font-semibold">{option}</h3>
-            </Card>
+            </button>
           ))}
         </div>
       </Card>
