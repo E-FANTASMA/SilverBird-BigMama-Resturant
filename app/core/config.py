@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     environment: str = "development"
     debug: bool = True
+    auto_run_migrations_on_startup: bool = True
     api_v1_prefix: str = "/api/v1"
     backend_cors_origins: list[str] = Field(
         default_factory=lambda: [

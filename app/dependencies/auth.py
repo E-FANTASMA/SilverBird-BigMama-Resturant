@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ForbiddenException, NotFoundException, UnauthorizedException
@@ -32,6 +33,17 @@ def get_current_user(
         raise UnauthorizedException("User for this token was not found") from exc
     if not user.is_active or user.deleted_at is not None:
         raise UnauthorizedException("This account is inactive")
+    if session.bind and session.bind.dialect.name == "postgresql":
+        session.execute(
+            text(
+                """
+                select
+                    set_config('app.current_user_id', :user_id, true),
+                    set_config('app.current_user_role', :role_name, true)
+                """
+            ),
+            {"user_id": str(user.id), "role_name": user.role.name if user.role else ""},
+        )
     return user
 
 

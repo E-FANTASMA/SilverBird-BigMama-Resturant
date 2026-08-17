@@ -1,16 +1,31 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from alembic import command
+from alembic.config import Config
 
 from app.api.v1.router import api_router
 from app.application.services.auth_service import AuthService
 from app.core.config import get_settings
 from app.core.exception_handlers import register_exception_handlers
-from app.core.logging import configure_logging
+from app.core.logging import configure_logging, get_logger, log_event
 from app.domain.enums import RoleName
 from app.infrastructure.database.base import Base
 from app.infrastructure.database.models.role import RoleModel
 from app.infrastructure.database.session import SessionLocal, engine
 from app.middleware.request_id import RequestIDMiddleware
+
+
+logger = get_logger(__name__)
+
+
+def _run_startup_migrations() -> None:
+    settings = get_settings()
+    if settings.database_url.startswith("sqlite"):
+        log_event(logger, "database_migrations_skipped", reason="sqlite_database")
+        return
+    alembic_config = Config("alembic.ini")
+    command.upgrade(alembic_config, "head")
+    log_event(logger, "database_migrations_applied", revision="head")
 
 
 def create_app() -> FastAPI:
@@ -39,6 +54,8 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     async def ensure_bootstrap_data() -> None:
+        if settings.auto_run_migrations_on_startup:
+            _run_startup_migrations()
         Base.metadata.create_all(bind=engine)
         with SessionLocal() as session:
             existing = {role.name for role in session.query(RoleModel).all()}
