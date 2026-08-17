@@ -22,7 +22,7 @@ export const promoCards = [
   },
   {
     title: "Delivery Within Lagos",
-    copy: "Real-time order flow with polished checkout for home, pickup, or dine-in.",
+    copy: "Order for delivery, pickup, or dine-in across Lagos.",
   },
 ];
 

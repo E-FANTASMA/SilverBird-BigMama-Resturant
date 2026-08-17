@@ -89,7 +89,7 @@ export function CustomerHomePage() {
             <div className="space-y-3">
               <h1 className="max-w-2xl text-3xl font-bold sm:text-5xl">Order chef-crafted favourites with a premium, delivery-first experience.</h1>
               <p className="max-w-xl text-sm text-white/80 sm:text-base">
-                Explore menu collections, add items fast, and move from cart to payment with clean, confidence-building checkout flows.
+                Browse the menu, add items to your cart, and checkout when you are ready.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -127,15 +127,11 @@ export function CustomerHomePage() {
       </div>
 
       <section className="space-y-4">
-        <SectionHeading
-          eyebrow="Collections"
-          title="Browse by category"
-          description="A cleaner menu entry point with crisp grouping and consistent spacing."
-        />
+        <SectionHeading eyebrow="Collections" title="Browse by category" />
         {categoriesLoading ? (
           <LoadingState label="Loading menu categories..." />
         ) : categoriesError ? (
-          <ErrorState title="Could not load categories" description="The menu categories are unavailable right now because the backend did not respond." />
+          <ErrorState title="Could not load categories" description="Menu categories are unavailable right now. Please try again." />
         ) : (
           <div className="flex flex-wrap gap-3">
             {categories?.map((category) => (
@@ -146,7 +142,7 @@ export function CustomerHomePage() {
       </section>
 
       <section className="space-y-4">
-        <SectionHeading title="Popular right now" description="Signature plates styled as premium product cards." />
+        <SectionHeading title="Popular right now" />
         {foodsLoading ? (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
@@ -154,7 +150,7 @@ export function CustomerHomePage() {
             ))}
           </div>
         ) : foodsError ? (
-          <ErrorState title="Could not load menu items" description="Popular dishes could not be loaded from the backend." />
+          <ErrorState title="Could not load menu items" description="Popular dishes could not be loaded. Please try again." />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {foods?.slice(0, 4).map((food) => (
@@ -221,13 +217,13 @@ export function CategoriesPage() {
           </div>
         </Card>
       ) : (
-        <SectionHeading title="Menu Categories" description="Built for quick scanning on mobile and expansive browsing on desktop." />
+        <SectionHeading title="Menu Categories" />
       )}
 
       {categoriesLoading ? (
         <LoadingState label="Loading menu categories..." />
       ) : categoriesError ? (
-        <ErrorState title="Could not load categories" description="The backend did not return menu categories." />
+        <ErrorState title="Could not load categories" description="Menu categories could not be loaded. Please try again." />
       ) : (
         <Card className="rounded-[2rem] border-white/70 p-4 sm:p-5">
           <div className="flex flex-wrap gap-3">
@@ -247,9 +243,9 @@ export function CategoriesPage() {
       {foodsLoading ? (
         <LoadingState label="Loading menu categories..." />
       ) : foodsError ? (
-        <ErrorState title="Could not load menu items" description="The backend did not return food items for this menu." />
+        <ErrorState title="Could not load menu items" description="Menu items could not be loaded. Please try again." />
       ) : visibleFoods.length === 0 ? (
-        <EmptyState title="No meals here yet" description="This category is ready for items as soon as the backend returns them." />
+        <EmptyState title="No meals here yet" description="There are no meals in this category yet." />
       ) : (
         <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
           {visibleFoods.map((food) => (
@@ -288,7 +284,7 @@ export function FoodDetailsPage() {
   }
 
   if (isError) {
-    return <ErrorState title="Could not load meal" description="The backend did not return this meal's details." />;
+    return <ErrorState title="Could not load meal" description="This meal could not be loaded. Please try again." />;
   }
 
   if (!food) {
@@ -369,7 +365,7 @@ export function SearchResultsPage() {
 
   return (
     <div className="space-y-6">
-      <SectionHeading title="Search Results" description={`Showing polished results for "${query || "all meals"}".`} />
+      <SectionHeading title="Search Results" description={query ? `Results for "${query}".` : undefined} />
       <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
         <SearchInput value={query} onChange={(event) => setParams({ q: event.target.value })} />
         <Button variant="outline">
@@ -380,7 +376,7 @@ export function SearchResultsPage() {
       {isLoading ? (
         <LoadingState label="Loading search results..." />
       ) : isError ? (
-        <ErrorState title="Could not search menu" description="Search results are unavailable because the backend request failed." />
+        <ErrorState title="Could not search menu" description="Search is unavailable right now. Please try again." />
       ) : pageFoods.length === 0 ? (
         <EmptyState title="No results yet" description="Try another search term or explore full categories." />
       ) : (
@@ -425,7 +421,7 @@ export function CartPage() {
   return (
     <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
       <div className="space-y-4">
-        <SectionHeading title="Your Cart" description="Crisp quantity controls and a clear price summary." />
+        <SectionHeading title="Your Cart" />
         {cart.items.map((item) => (
           <Card key={item.id} className="p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -448,7 +444,7 @@ export function CartPage() {
         ))}
       </div>
       <Card className="h-fit p-6">
-        <SectionHeading title="Summary" description="Everything you need before checkout." />
+        <SectionHeading title="Summary" />
         <div className="mt-6 space-y-4 text-sm">
           <SummaryRow label="Subtotal" value={formatCurrency(cart.subtotal)} />
           <SummaryRow label="Delivery fee" value={formatCurrency(cart.delivery_fee)} />
@@ -525,7 +521,7 @@ export function CheckoutPage() {
   return (
     <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
       <div className="space-y-6">
-        <SectionHeading title="Checkout" description="A warm, focused payment journey with minimal friction." />
+        <SectionHeading title="Checkout" description="Choose how you want to receive your order and confirm your details." />
         <Card className="p-6">
           <h3 className="font-semibold">Order type</h3>
           <div className="mt-4 flex flex-wrap gap-3">
@@ -592,7 +588,7 @@ export function CheckoutPage() {
         </Card>
       </div>
       <Card className="h-fit p-6">
-        <SectionHeading title="Order recap" description="Clear totals and a strong completion CTA." />
+        <SectionHeading title="Order recap" />
         <div className="mt-6 space-y-4">
           <SummaryRow label="Items" value={`${cart.total_items}`} />
           <SummaryRow label="Estimated total" value={formatCurrency(cart.grand_total)} strong />
@@ -630,20 +626,19 @@ export function PaymentPage() {
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
       <Card className="p-6 sm:p-8">
-        <SectionHeading title="Payment" description="Paystack initialization is connected to the backend, with a clean handoff from checkout." />
+        <SectionHeading title="Payment" description="Choose how you would like to pay." />
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           {["Card", "Bank Transfer", "Wallet"].map((option) => (
             <Card key={option} className="p-5">
               <h3 className="font-semibold">{option}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Styled as a selectable payment surface for production polish.</p>
             </Card>
           ))}
         </div>
       </Card>
       <Card className="h-fit p-6">
-        <SectionHeading title="Ready to pay?" description="Use the connected backend initializer and continue once authorization opens." />
+        <SectionHeading title="Ready to pay?" description="Click below to open the secure payment window and complete your order." />
         <Button className="mt-6 w-full" size="lg" onClick={handlePayment} disabled={initializePayment.isPending}>
-          {initializePayment.isPending ? "Initializing..." : "Initialize payment"}
+          {initializePayment.isPending ? "Opening payment..." : "Pay now"}
         </Button>
       </Card>
     </div>
@@ -680,7 +675,7 @@ export function OrderHistoryPage() {
   const { data: orders } = useOrders();
   return (
     <div className="space-y-6">
-      <SectionHeading title="Order History" description="A polished order list with clear status tagging and timestamps." />
+      <SectionHeading title="Order History" />
       <div className="grid gap-4">
         {orders?.map((order) => (
           <Card key={order.id} className="p-5">
@@ -717,7 +712,7 @@ export function OrderDetailsPage() {
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
       <Card className="p-6">
-        <SectionHeading title={`Order ${order.order_number}`} description="Detailed line items, order notes, and delivery progress." />
+        <SectionHeading title={`Order ${order.order_number}`} />
         <div className="mt-6 space-y-4">
           {order.items.map((item) => (
             <div key={item.id} className="flex items-center justify-between rounded-2xl border border-border p-4">
@@ -731,7 +726,7 @@ export function OrderDetailsPage() {
         </div>
       </Card>
       <Card className="p-6">
-        <SectionHeading title="Summary" description="Status, timing, payment, and delivery context." />
+        <SectionHeading title="Summary" />
         <div className="mt-6 space-y-4">
           <SummaryRow label="Status" value={order.status.replace(/_/g, " ")} />
           <SummaryRow label="Payment" value={order.payment_status} />
@@ -750,7 +745,6 @@ export function SavedAddressesPage() {
     <div className="space-y-6">
       <SectionHeading
         title="Saved Addresses"
-        description="Elegant address management with strong readability and clear defaults."
         action={<Link to="/app/addresses/new"><Button>Add address</Button></Link>}
       />
       {addresses && addresses.length > 0 ? (
@@ -834,10 +828,7 @@ export function AddressFormPage() {
 
   return (
     <Card className="mx-auto max-w-3xl p-6">
-      <SectionHeading
-        title={isEditing ? "Edit Address" : "Add Address"}
-        description="Production-style form spacing, validation, and hierarchy."
-      />
+      <SectionHeading title={isEditing ? "Edit Address" : "Add Address"} />
       <AddressEditorForm
         key={currentAddress ? `${currentAddress.id}-${currentAddress.updated_at}` : "new-address"}
         defaultValues={initialValues}
@@ -919,7 +910,7 @@ export function ProfilePage() {
         <p className="mt-2 text-sm text-muted-foreground">{profile?.email}</p>
       </Card>
       <Card className="p-6">
-        <SectionHeading title="Profile" description="Editable personal information with strong form rhythm." />
+        <SectionHeading title="Profile" description="Update your personal information below." />
         <form className="mt-6 grid gap-4 sm:grid-cols-2">
           <Field label="First name" error={form.formState.errors.first_name?.message}>
             <TextInput {...form.register("first_name")} />

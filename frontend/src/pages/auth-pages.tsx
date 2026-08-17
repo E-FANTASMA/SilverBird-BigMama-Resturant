@@ -206,7 +206,7 @@ export function RegisterPage() {
   return (
     <AuthLayout
       title="Create your account"
-      description="Join the premium dining platform in a few quick steps."
+      description="Create an account to order meals and track your deliveries."
       footer={
         <p className="text-sm text-muted-foreground">
           Already have an account?{" "}
@@ -293,7 +293,7 @@ export function ForgotPasswordPage() {
   return (
     <AuthLayout
       title="Reset your password"
-      description="We'll initiate your reset flow and, in non-production environments, return the reset token."
+      description="Enter your email and we will send you reset instructions."
       footer={
         <Link to="/login" className="text-sm font-semibold text-primary">
           Back to sign in

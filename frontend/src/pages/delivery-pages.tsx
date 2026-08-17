@@ -10,7 +10,7 @@ export function DeliveryDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <SectionHeading title="Delivery Dashboard" description="A clean logistics-focused surface for active rider work." />
+      <SectionHeading title="Delivery Dashboard" />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Assigned now" value={`${deliveries?.length ?? 0}`} />
         <StatCard label="In transit" value={`${deliveries?.filter((item) => item.status === "IN_TRANSIT").length ?? 0}`} />
@@ -30,7 +30,7 @@ export function AssignedOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <SectionHeading title="Assigned Orders" description="Quick rider scanning with action-oriented detail cards." />
+      <SectionHeading title="Assigned Orders" />
       <div className="grid gap-4">
         {deliveries.map((delivery) => (
           <Card key={delivery.id} className="p-5">
@@ -62,7 +62,7 @@ export function DeliveryDetailsPage() {
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
       <Card className="p-6">
-        <SectionHeading title="Delivery Details" description="Customer contact details and delivery instructions in one calm layout." />
+        <SectionHeading title="Delivery Details" />
         <div className="mt-6 grid gap-4">
           <Detail icon={<PhoneCall className="h-5 w-5" />} label="Customer" value={contact?.customer_name ?? "Unavailable"} />
           <Detail icon={<PhoneCall className="h-5 w-5" />} label="Phone" value={contact?.customer_phone ?? "Unavailable"} />
@@ -71,7 +71,7 @@ export function DeliveryDetailsPage() {
         </div>
       </Card>
       <Card className="p-6">
-        <SectionHeading title="Rider actions" description="Designed for quick interaction during active delivery." />
+        <SectionHeading title="Rider actions" description="Update the delivery status as you progress." />
         <div className="mt-6 flex flex-col gap-3">
           <Button>Mark as picked up</Button>
           <Button variant="outline">Mark in transit</Button>
@@ -86,7 +86,7 @@ export function DeliveryHistoryPage() {
   const { data: deliveries } = useDeliveryOrders();
   return (
     <div className="space-y-6">
-      <SectionHeading title="Delivery History" description="A concise rider timeline with completed runs and statuses." />
+      <SectionHeading title="Delivery History" />
       <div className="grid gap-4">
         {deliveries?.map((delivery) => (
           <Card key={delivery.id} className="p-5">
@@ -108,7 +108,7 @@ export function DeliveryProfilePage() {
   const { data: profile } = useProfile();
   return (
     <Card className="max-w-3xl p-6">
-      <SectionHeading title="Rider Profile" description="A focused profile summary tuned for delivery personnel." />
+      <SectionHeading title="Rider Profile" />
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <Detail icon={<PhoneCall className="h-5 w-5" />} label="Name" value={`${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`} />
         <Detail icon={<PhoneCall className="h-5 w-5" />} label="Phone" value={profile?.phone ?? "Unavailable"} />

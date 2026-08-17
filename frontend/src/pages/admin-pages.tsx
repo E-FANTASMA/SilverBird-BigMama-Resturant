@@ -34,7 +34,7 @@ export function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <SectionHeading title="Dashboard" description="An executive restaurant overview with premium density and legibility." />
+      <SectionHeading title="Dashboard" />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total orders" value={`${data?.total_orders ?? 0}`} delta="+12%" />
         <StatCard label="Total customers" value={`${data?.total_customers ?? 0}`} delta="+8%" />
@@ -44,7 +44,7 @@ export function AdminDashboardPage() {
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <RevenueChartCard />
         <Card className="p-6">
-          <SectionHeading title="Operational focus" description="Quick-glance priorities for the shift." />
+          <SectionHeading title="Operational focus" />
           <div className="mt-6 space-y-4">
             {[
               ["Prep line stability", "Kitchen throughput is holding below the 20-minute target."],
@@ -67,7 +67,7 @@ export function ManageCategoriesPage() {
   const { data: categories } = useCategories();
   return (
     <div className="space-y-6">
-      <SectionHeading title="Manage Categories" description="Simple, elegant administration surfaces with clean table rhythm." />
+      <SectionHeading title="Manage Categories" />
       <DataTable
         columns={["Category", "Description", "Sort Order", "Status"]}
         rows={(categories ?? []).map((category) => [
@@ -89,7 +89,6 @@ export function ManageFoodsPage() {
     <div className="space-y-6">
       <SectionHeading
         title="Manage Foods"
-        description="Food inventory controls with fast scanning and polished row actions."
         action={<Link to="/admin/foods/new"><Button><PlusCircle className="h-4 w-4" /> Add food</Button></Link>}
       />
       <DataTable
@@ -114,7 +113,7 @@ export function AddEditFoodPage() {
 
   return (
     <Card className="mx-auto max-w-4xl p-6">
-      <SectionHeading title="Add / Edit Food" description="A production-style editor for core menu items." />
+      <SectionHeading title="Add / Edit Food" />
       <form className="mt-6 grid gap-4 sm:grid-cols-2">
         <Field label="Food name" error={form.formState.errors.name?.message}>
           <TextInput {...form.register("name")} placeholder="Charcoal Chicken Supreme" />
@@ -147,7 +146,7 @@ export function AdminOrdersPage() {
   const { data: orders } = useOrders();
   return (
     <div className="space-y-6">
-      <SectionHeading title="Orders" description="Customer orders styled as a clean operational queue." />
+      <SectionHeading title="Orders" />
       <DataTable
         columns={["Order", "Date", "Status", "Payment", "Amount", "Action"]}
         rows={(orders ?? []).map((order) => [
@@ -174,7 +173,7 @@ export function AdminOrderDetailsPage() {
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
       <Card className="p-6">
-        <SectionHeading title={`Order ${order.order_number}`} description="Order lines, notes, and fulfillment details for the operations team." />
+        <SectionHeading title={`Order ${order.order_number}`} />
         <div className="mt-6 space-y-4">
           {order.items.map((item) => (
             <div key={item.id} className="flex items-center justify-between rounded-2xl border border-border p-4">
@@ -198,7 +197,7 @@ export function AdminOrderDetailsPage() {
           ))}
           <AppDialog
             title="Assign delivery"
-            description="This modal demonstrates the shared dialog system for operational actions."
+            description="Select a rider to assign to this delivery."
             trigger={<Button className="w-full">Assign rider</Button>}
           >
             <div className="space-y-4">
@@ -229,7 +228,7 @@ export function CustomersPage() {
 
   return (
     <div className="space-y-6">
-      <SectionHeading title="Customers" description="A clean roster of restaurant customers with easy scanability." />
+      <SectionHeading title="Customers" />
       <DataTable columns={["Name", "Email", "Phone", "Orders", "Status"]} rows={rows} />
     </div>
   );
@@ -238,7 +237,7 @@ export function CustomersPage() {
 export function DeliveryPersonnelPage() {
   return (
     <div className="space-y-6">
-      <SectionHeading title="Delivery Personnel" description="Rider management with concise performance indicators." />
+      <SectionHeading title="Delivery Personnel" />
       <DataTable
         columns={["Name", "Phone", "Status", "Deliveries"]}
         rows={[
@@ -256,7 +255,7 @@ export function ReportsPage() {
     <div className="grid gap-6 xl:grid-cols-2">
       <RevenueChartCard />
       <Card className="p-6">
-        <SectionHeading title="Order analytics" description="A companion reporting surface for operations and revenue tracking." />
+        <SectionHeading title="Order analytics" />
         <div className="mt-6 grid gap-4">
           {[
             { icon: <DollarSign className="h-5 w-5" />, title: "Average order value", value: formatCurrency(3672) },
@@ -285,7 +284,7 @@ export function RevenueAnalyticsPage() {
 export function AdminNotificationsPage() {
   return (
     <div className="space-y-6">
-      <SectionHeading title="Notifications" description="Operational messaging cards with clear severity and action visibility." />
+      <SectionHeading title="Notifications" />
       <div className="grid gap-4">
         {[
           ["Kitchen queue spike", "12 more orders than projected in the last 30 minutes.", "warning"],
@@ -330,7 +329,7 @@ function RevenueChartCard() {
   const bars = [24, 48, 38, 62, 40, 72, 55, 68, 49, 58, 64, 80];
   return (
     <Card className="p-6">
-      <SectionHeading title="Revenue Overview" description="A bespoke analytics card without generic dashboard styling." />
+      <SectionHeading title="Revenue Overview" />
       <div className="mt-8 grid h-72 grid-cols-12 items-end gap-3">
         {bars.map((bar, index) => (
           <div key={index} className="flex h-full flex-col justify-end gap-3">
