@@ -213,7 +213,7 @@ export function StatCard({
     <Card className="min-w-0 p-5">
       <p className="text-sm text-muted-foreground">{label}</p>
       <div className="mt-4 flex items-end justify-between gap-3">
-        <p className="min-w-0 break-words text-2xl font-bold text-foreground">{value}</p>
+        <p className="min-w-0 break-words text-xl font-bold leading-tight text-foreground sm:text-2xl">{value}</p>
         {delta ? <Badge tone="success">{delta}</Badge> : null}
       </div>
     </Card>
