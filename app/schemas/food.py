@@ -9,6 +9,7 @@ class FoodCreateRequest(SchemaBase):
     name: str
     description: str | None = None
     price: Decimal
+    is_available: bool = True
     preparation_time_minutes: int | None = None
 
 

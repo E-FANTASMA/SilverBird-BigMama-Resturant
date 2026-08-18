@@ -12,6 +12,7 @@ declare module "react-hook-form" {
     handleSubmit: (
       onValid: (values: TFieldValues) => void | Promise<void>,
     ) => (event?: unknown) => void | Promise<void>;
+    reset: (values?: Partial<TFieldValues>) => void;
     formState: {
       errors: Record<string, { message?: string }>;
     };

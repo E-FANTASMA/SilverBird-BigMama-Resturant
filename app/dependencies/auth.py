@@ -47,6 +47,15 @@ def get_current_user(
     return user
 
 
+def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    session: Session = Depends(get_db_session),
+):
+    if not credentials:
+        return None
+    return get_current_user(credentials=credentials, session=session)
+
+
 def require_roles(*roles: RoleName):
     def dependency(current_user=Depends(get_current_user)):
         if not current_user.role or current_user.role.name not in {role.value for role in roles}:

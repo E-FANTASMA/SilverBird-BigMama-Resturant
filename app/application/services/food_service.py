@@ -20,12 +20,16 @@ class FoodService:
         self.categories = CategoryRepository(session)
         self.storage = storage
 
-    def list_foods(self):
+    def list_foods(self, *, include_unavailable: bool = False):
+        if include_unavailable:
+            return self.foods.list_active()
         return self.foods.list_available()
 
-    def get_food(self, food_id):
+    def get_food(self, food_id, *, include_unavailable: bool = False):
         food = self.foods.get(food_id)
-        if food.deleted_at is not None or not food.is_available:
+        if food.deleted_at is not None:
+            raise NotFoundException("Food item not found")
+        if not include_unavailable and not food.is_available:
             raise NotFoundException("Food item not found")
         return food
 
@@ -40,6 +44,7 @@ class FoodService:
             slug=slug,
             description=payload.description,
             price=Decimal(str(payload.price)),
+            is_available=payload.is_available,
             preparation_time_minutes=payload.preparation_time_minutes,
         )
         self.foods.add(food)

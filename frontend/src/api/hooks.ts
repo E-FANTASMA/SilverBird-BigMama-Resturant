@@ -10,6 +10,7 @@ import type {
   DeliveryContact,
   DeliveryOrder,
   Food,
+  FoodPayload,
   NotificationItem,
   Order,
   PaymentInitializeResponse,
@@ -89,6 +90,51 @@ export function useFood(foodId?: string) {
     enabled: Boolean(foodId),
     queryKey: queryKeys.food(foodId ?? ""),
     queryFn: () => api.get<Food>(`/foods/${foodId}`).then((r) => r.data),
+  });
+}
+
+export function useCreateFood() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: FoodPayload) => api.post<Food>("/foods", payload).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.foods });
+      toast.success("Food created");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error, "Could not create food")),
+  });
+}
+
+export function useUpdateFood() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { foodId: string; data: Partial<FoodPayload> }) =>
+      api.patch<Food>(`/foods/${payload.foodId}`, payload.data).then((r) => r.data),
+    onSuccess: (food) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.foods });
+      queryClient.invalidateQueries({ queryKey: queryKeys.food(food.id) });
+      toast.success("Food updated");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error, "Could not update food")),
+  });
+}
+
+export function useUploadFoodImage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ foodId, file }: { foodId: string; file: File }) => {
+      const formData = new FormData();
+      formData.append("image", file);
+      return api.post<Food>(`/foods/${foodId}/image`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      }).then((r) => r.data);
+    },
+    onSuccess: (food) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.foods });
+      queryClient.invalidateQueries({ queryKey: queryKeys.food(food.id) });
+      toast.success("Food image uploaded");
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error, "Could not upload image")),
   });
 }
 

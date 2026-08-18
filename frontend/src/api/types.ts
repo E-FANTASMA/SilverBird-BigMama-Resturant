@@ -43,6 +43,15 @@ export interface Food extends Timestamped {
   preparation_time_minutes: number | null;
 }
 
+export interface FoodPayload {
+  category_id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  is_available: boolean;
+  preparation_time_minutes: number | null;
+}
+
 export interface CartItem extends Timestamped {
   cart_id: string;
   food_item_id: string;

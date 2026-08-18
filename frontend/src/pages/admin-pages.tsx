@@ -1,11 +1,21 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BarChart3, Bike, DollarSign, Package, PlusCircle, Users } from "lucide-react";
-import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { BarChart3, Bike, DollarSign, Package, Pencil, PlusCircle, Users } from "lucide-react";
+import type { ChangeEvent, ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
-import { useAdminDashboard, useCategories, useFoods, useOrders, useProfile } from "@/api/hooks";
+import {
+  useAdminDashboard,
+  useCategories,
+  useCreateFood,
+  useFood,
+  useFoods,
+  useOrders,
+  useProfile,
+  useUpdateFood,
+  useUploadFoodImage,
+} from "@/api/hooks";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { demoDeliveryOrders } from "@/lib/mock";
 import {
@@ -18,16 +28,22 @@ import {
   SectionHeading,
   Select,
   StatCard,
-  TextArea,
   TextInput,
+  TextArea,
 } from "@/components/ui";
 
 const foodSchema = z.object({
   name: z.string().min(1),
   category_id: z.string().min(1),
-  price: z.string().min(1),
+  price: z.string().min(1).refine((value) => Number.isFinite(Number(value)) && Number(value) >= 0, "Price must be a valid amount"),
   description: z.string().min(10),
+  preparation_time_minutes: z
+    .string()
+    .optional()
+    .refine((value) => !value || (Number.isInteger(Number(value)) && Number(value) >= 0), "Prep time must be a whole number"),
+  is_available: z.enum(["true", "false"]),
 });
+type FoodFormValues = z.infer<typeof foodSchema>;
 
 export function AdminDashboardPage() {
   const { data } = useAdminDashboard();
@@ -84,6 +100,7 @@ export function ManageCategoriesPage() {
 export function ManageFoodsPage() {
   const { data: foods } = useFoods();
   const { data: categories } = useCategories();
+  const updateFood = useUpdateFood();
 
   return (
     <div className="space-y-6">
@@ -92,12 +109,30 @@ export function ManageFoodsPage() {
         action={<Link to="/admin/foods/new"><Button><PlusCircle className="h-4 w-4" /> Add food</Button></Link>}
       />
       <DataTable
-        columns={["Food", "Category", "Price", "Availability"]}
+        columns={["Food", "Category", "Price", "Availability", "Action"]}
         rows={(foods ?? []).map((food) => [
           <span className="font-medium">{food.name}</span>,
           categories?.find((category) => category.id === food.category_id)?.name ?? "Unassigned",
           formatCurrency(food.price),
-          <Badge tone={food.is_available ? "success" : "danger"}>{food.is_available ? "Available" : "Hidden"}</Badge>,
+          <Button
+            variant={food.is_available ? "secondary" : "outline"}
+            size="sm"
+            disabled={updateFood.isPending}
+            onClick={() =>
+              updateFood.mutate({
+                foodId: food.id,
+                data: { is_available: !food.is_available },
+              })
+            }
+          >
+            {food.is_available ? "On" : "Off"}
+          </Button>,
+          <Link to={`/admin/foods/${food.id}/edit`}>
+            <Button variant="outline" size="sm">
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Button>
+          </Link>,
         ])}
       />
     </div>
@@ -105,16 +140,79 @@ export function ManageFoodsPage() {
 }
 
 export function AddEditFoodPage() {
+  const navigate = useNavigate();
+  const { foodId } = useParams();
+  const isEditing = Boolean(foodId);
   const { data: categories } = useCategories();
-  const form = useForm<z.infer<typeof foodSchema>>({
+  const { data: existingFood } = useFood(foodId);
+  const createFood = useCreateFood();
+  const updateFood = useUpdateFood();
+  const uploadFoodImage = useUploadFoodImage();
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedImageName, setSelectedImageName] = useState("");
+  const form = useForm<FoodFormValues>({
     resolver: zodResolver(foodSchema),
-    defaultValues: { name: "", category_id: "", price: "", description: "" },
+    defaultValues: {
+      name: "",
+      category_id: "",
+      price: "",
+      description: "",
+      preparation_time_minutes: "",
+      is_available: "true",
+    },
   });
+
+  useEffect(() => {
+    if (!existingFood) {
+      return;
+    }
+
+    form.reset({
+      name: existingFood.name,
+      category_id: existingFood.category_id,
+      price: String(existingFood.price),
+      description: existingFood.description ?? "",
+      preparation_time_minutes: existingFood.preparation_time_minutes != null ? String(existingFood.preparation_time_minutes) : "",
+      is_available: existingFood.is_available ? "true" : "false",
+    });
+  }, [existingFood, form]);
+
+  const isSubmitting = createFood.isPending || updateFood.isPending || uploadFoodImage.isPending;
+
+  const onSelectImage = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setSelectedImage(file);
+    setSelectedImageName(file?.name ?? "");
+  };
+
+  const onSubmit = async (values: FoodFormValues) => {
+    const payload = {
+      name: values.name,
+      category_id: values.category_id,
+      price: Number(values.price),
+      description: values.description,
+      preparation_time_minutes: values.preparation_time_minutes?.trim() ? Number(values.preparation_time_minutes) : null,
+      is_available: values.is_available === "true",
+    };
+
+    const savedFood = isEditing && foodId
+      ? await updateFood.mutateAsync({ foodId, data: payload })
+      : await createFood.mutateAsync(payload);
+
+    if (selectedImage) {
+      await uploadFoodImage.mutateAsync({ foodId: savedFood.id, file: selectedImage });
+    }
+
+    navigate("/admin/foods");
+  };
 
   return (
     <Card className="mx-auto max-w-4xl p-6">
-      <SectionHeading title="Add / Edit Food" />
-      <form className="mt-6 grid gap-4 sm:grid-cols-2">
+      <SectionHeading
+        title={isEditing ? "Edit Food" : "Add Food"}
+        description="Save the meal details, choose whether it is currently available, and optionally attach a food image."
+      />
+      <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
         <Field label="Food name" error={form.formState.errors.name?.message}>
           <TextInput {...form.register("name")} placeholder="Charcoal Chicken Supreme" />
         </Field>
@@ -127,7 +225,16 @@ export function AddEditFoodPage() {
           </Select>
         </Field>
         <Field label="Price" error={form.formState.errors.price?.message}>
-          <TextInput {...form.register("price")} placeholder="9800" />
+          <TextInput {...form.register("price")} inputMode="decimal" placeholder="9800" />
+        </Field>
+        <Field label="Prep time (minutes)" error={form.formState.errors.preparation_time_minutes?.message}>
+          <TextInput {...form.register("preparation_time_minutes")} inputMode="numeric" placeholder="15" />
+        </Field>
+        <Field label="Availability" error={form.formState.errors.is_available?.message}>
+          <Select {...form.register("is_available")}>
+            <option value="true">On</option>
+            <option value="false">Off</option>
+          </Select>
         </Field>
         <div className="sm:col-span-2">
           <Field label="Description" error={form.formState.errors.description?.message}>
@@ -135,7 +242,18 @@ export function AddEditFoodPage() {
           </Field>
         </div>
         <div className="sm:col-span-2">
-          <Button>Save food</Button>
+          <Field label="Food image">
+            <TextInput type="file" accept="image/*" onChange={onSelectImage} />
+            <p className="text-xs text-muted-foreground">
+              {selectedImageName || existingFood?.image_url ? (selectedImageName || "Current image already uploaded") : "No image selected yet."}
+            </p>
+          </Field>
+        </div>
+        <div className="sm:col-span-2 flex gap-3">
+          <Button disabled={isSubmitting}>{isSubmitting ? "Saving..." : "Save food"}</Button>
+          <Link to="/admin/foods">
+            <Button type="button" variant="outline">Cancel</Button>
+          </Link>
         </div>
       </form>
     </Card>
