@@ -15,7 +15,9 @@ import {
   Soup,
   UserRound,
   Users,
+  X,
 } from "lucide-react";
+import { useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "@/auth/auth-store";
@@ -69,6 +71,7 @@ export function DashboardShell({ nav, title }: { nav: NavItem[]; title: string }
   const { setSession } = useAuth();
   const logout = useLogout();
   const { data: profile } = useProfile();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Guest";
 
@@ -81,7 +84,7 @@ export function DashboardShell({ nav, title }: { nav: NavItem[]; title: string }
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(194,154,76,0.12),transparent_24%),linear-gradient(180deg,rgba(255,251,247,1),rgba(247,243,240,1))]">
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
-        <Card className="h-fit p-4 lg:sticky lg:top-6">
+        <Card className="order-2 hidden h-fit p-4 lg:order-1 lg:sticky lg:top-6 lg:block">
           <div className="space-y-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/70">Silverbird</p>
@@ -110,10 +113,24 @@ export function DashboardShell({ nav, title }: { nav: NavItem[]; title: string }
             </Button>
           </div>
         </Card>
-        <div className="space-y-6">
+        <div className="order-1 space-y-6 lg:order-2">
           <Card className="p-4 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
+                <div className="mb-3 flex items-center justify-between lg:hidden">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/70">Silverbird</p>
+                    <p className="mt-1 text-lg font-semibold">{title}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setMobileMenuOpen((open) => !open)}
+                    aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+                  >
+                    {mobileMenuOpen ? <X className="h-5 w-5" /> : <MenuSquare className="h-5 w-5" />}
+                  </Button>
+                </div>
                 <h2 className="text-xl font-semibold">Welcome back, {displayName}.</h2>
               </div>
               <div className="flex items-center gap-3">
@@ -125,6 +142,32 @@ export function DashboardShell({ nav, title }: { nav: NavItem[]; title: string }
                 </Button>
               </div>
             </div>
+            {mobileMenuOpen ? (
+              <div className="mt-4 space-y-3 border-t border-border/70 pt-4 lg:hidden">
+                <nav className="space-y-2">
+                  {nav.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition",
+                          isActive ? "bg-primary text-white shadow-soft" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                        )
+                      }
+                    >
+                      {item.icon}
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </nav>
+                <Button variant="outline" className="w-full justify-start" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            ) : null}
           </Card>
           <div className="animate-fade-up">
             <Outlet />

@@ -310,9 +310,9 @@ export function FoodDetailsPage() {
             <p className="mt-3 text-muted-foreground">{food.description}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            <StatCard label="Price" value={formatCurrency(food.price)} />
-            <StatCard label="Prep time" value={`${food.preparation_time_minutes ?? 15} mins`} />
-            <StatCard label="Availability" value={food.is_available ? "Available" : "Unavailable"} />
+            <StatCard label="Price" value={formatCurrency(food.price)} valueClassName="text-lg sm:text-xl" />
+            <StatCard label="Prep time" value={`${food.preparation_time_minutes ?? 15} mins`} valueClassName="text-lg sm:text-xl" />
+            <StatCard label="Availability" value={food.is_available ? "Available" : "Unavailable"} valueClassName="text-lg sm:text-xl" />
           </div>
           <div className="rounded-3xl border border-border bg-secondary/40 p-4">
             <div className="flex items-center justify-between">
